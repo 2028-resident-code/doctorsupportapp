@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doctor Support App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .tab-btn.active {
+      border-bottom: 3px solid #2563eb;
+      color: #2563eb;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
+
+  <!-- ヘッダー -->
+  <header class="bg-slate-900 text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center">
+    <h1 class="text-base sm:text-lg font-bold flex items-center gap-2">
+      <span id="header-title">Doctor Support App</span>
+    </h1>
+    <button id="btn-to-main" onclick="showMainSelection()" class="hidden bg-slate-700 hover:bg-slate-600 text-xs text-white px-3 py-1.5 rounded transition">
+      🏠 メイン選択へ
+    </button>
+  </header>
+
+  <main class="max-w-2xl mx-auto p-4 pb-16">
+
+    <!-- ==================== 0. メイン機能選択画面 ==================== -->
+    <section id="sec-main-selection" class="space-y-6 pt-6">
+      <div class="text-center space-y-2">
+        <h2 class="text-xl font-extrabold text-slate-800">機能を選択してください</h2>
+        <p class="text-xs text-slate-500">診療サポートツール・症例管理システム</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+        <!-- J-OSLERカード -->
+        <button onclick="openJosler()" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-500 hover:shadow-md transition text-left space-y-3 group">
+          <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+            📋
+          </div>
+          <div>
+            <h3 class="font-bold text-lg text-slate-800">J-OSLER 症例登録</h3>
+            <p class="text-xs text-slate-500 mt-1">120症例要件・疾患群・病名別登録と進捗管理（端末内保存）</p>
+          </div>
+        </button>
+
+        <!-- 計算アシストカード -->
+        <button onclick="openCalc()" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-500 hover:shadow-md transition text-left space-y-3 group">
+          <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+            🧮
+          </div>
+          <div>
+            <h3 class="font-bold text-lg text-slate-800">計算・鑑別アシスト</h3>
+            <p class="text-xs text-slate-500 mt-1">動脈血液ガス (ABG)・腎機能 (FE)・貧血アセスメントツール</p>
+          </div>
+        </button>
+      </div>
+    </section>
+
+
+    <!-- ==================== A. J-OSLER 症例登録エリア ==================== -->
+    <section id="sec-josler" class="hidden space-y-6">
+
+      <!-- 全体進捗サマリーカード -->
+      <div id="overall-summary-card" class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h2 class="text-sm font-bold text-slate-700">📊 全体進捗ステータス (修了要件)</h2>
+          <div class="flex gap-2">
+            <button onclick="exportData()" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded border">保存データ出力</button>
+            <button onclick="importData()" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded border">復元</button>
+            <input type="file" id="import-file" class="hidden" accept=".json" onchange="handleFileImport(event)">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="p-2.5 bg-blue-50 border border-blue-100 rounded-lg">
+            <div class="text-[10px] text-blue-600 font-bold">登録症例数</div>
+            <div id="summary-cases" class="text-base font-extrabold text-blue-900">0 / 120</div>
+          </div>
+          <div class="p-2.5 bg-emerald-50 border border-emerald-100 rounded-lg">
+            <div class="text-[10px] text-emerald-600 font-bold">登録疾患群</div>
+            <div id="summary-groups" class="text-base font-extrabold text-emerald-900">0 / 56</div>
+          </div>
+          <div class="p-2.5 bg-purple-50 border border-purple-100 rounded-lg">
+            <div class="text-[10px] text-purple-600 font-bold">病歴要約提出</div>
+            <div id="summary-reports" class="text-base font-extrabold text-purple-900">0 / 29</div>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center text-xs bg-slate-50 p-2.5 rounded border text-slate-600">
+            <span>うち初期研修症例数（上限60）:</span>
+            <span id="summary-jr" class="font-bold text-slate-800">0 例 (病歴要約 0/14)</span>
+          </div>
+          <div class="flex justify-between items-center text-xs bg-slate-50 p-2.5 rounded border text-slate-600">
+            <span>うち外来症例数（上限12）:</span>
+            <span id="summary-outpatient" class="font-bold text-slate-800">0 例 (病歴要約 0/7)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 階層1: 分野一覧 -->
+      <div id="josler-view-fields" class="space-y-3">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">分野を選択</h3>
+        <div id="fields-list" class="space-y-2"></div>
+      </div>
+
+      <!-- 階層2: 疾患群一覧 -->
+      <div id="josler-view-groups" class="hidden space-y-4">
+        <button onclick="navToFields()" class="text-xs text-blue-600 font-bold flex items-center gap-1">← 分野一覧に戻る</button>
+
+        <!-- 分野別進捗ステータスカード -->
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+          <div class="border-b pb-1 flex justify-between items-center">
+            <h2 id="field-status-title" class="text-sm font-bold text-slate-800"></h2>
+            <span id="field-req-badge" class="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold"></span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="p-2 bg-blue-50 border border-blue-100 rounded-lg">
+              <div class="text-[10px] text-blue-600 font-bold">登録症例数</div>
+              <div id="field-summary-cases" class="text-sm font-extrabold text-blue-900">0 / 0</div>
+            </div>
+            <div class="p-2 bg-emerald-50 border border-emerald-100 rounded-lg">
+              <div class="text-[10px] text-emerald-600 font-bold">登録疾患群</div>
+              <div id="field-summary-groups" class="text-sm font-extrabold text-emerald-900">0 / 0</div>
+            </div>
+            <div class="p-2 bg-purple-50 border border-purple-100 rounded-lg">
+              <div class="text-[10px] text-purple-600 font-bold">病歴要約提出</div>
+              <div id="field-summary-reports" class="text-sm font-extrabold text-purple-900">0 / 0</div>
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="flex justify-between items-center text-[11px] bg-slate-50 p-2 rounded border text-slate-600">
+              <span>うち初期研修症例数:</span>
+              <span id="field-summary-jr" class="font-bold text-slate-800">0 例</span>
+            </div>
+            <div class="flex justify-between items-center text-[11px] bg-slate-50 p-2 rounded border text-slate-600">
+              <span>うち外来症例数:</span>
+              <span id="field-summary-outpatient" class="font-bold text-slate-800">0 例</span>
+            </div>
+          </div>
+
+          <div id="current-field-warning" class="hidden text-[11px] bg-amber-50 text-amber-900 p-2.5 rounded border border-amber-200"></div>
+        </div>
+
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">疾患群を選択</h3>
+        <div id="groups-list" class="space-y-2"></div>
+      </div>
+
+      <!-- 階層3: 病名（疾患項目）一覧 -->
+      <div id="josler-view-diseases" class="hidden space-y-4">
+        <button onclick="navToGroups()" class="text-xs text-blue-600 font-bold flex items-center gap-1">← 疾患群一覧に戻る</button>
+        
+        <div class="bg-white p-4 rounded-xl border space-y-1">
+          <div id="current-group-title" class="font-bold text-slate-800"></div>
+          <p class="text-xs text-slate-500">この疾患群に含まれる病名（疾患項目）を選択してください。</p>
+        </div>
+
+        <div id="diseases-list" class="space-y-2"></div>
+      </div>
+
+      <!-- 階層4: 症例登録・一覧画面 -->
+      <div id="josler-view-cases" class="hidden space-y-4">
+        <button onclick="navToDiseases()" class="text-xs text-blue-600 font-bold flex items-center gap-1">← 病名一覧に戻る</button>
+        
+        <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl space-y-1">
+          <div id="current-disease-title" class="font-extrabold text-blue-900 text-base"></div>
+          <div id="current-disease-sub" class="text-xs text-blue-700"></div>
+        </div>
+
+        <!-- 登録済み症例リスト -->
+        <div id="cases-list" class="space-y-3"></div>
+
+        <!-- 新規登録フォーム -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-3 shadow-sm">
+          <h4 class="text-sm font-bold text-slate-700 border-b pb-2">➕ この病名で症例を追加登録</h4>
+          
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="block mb-1 font-medium">年代</label>
+              <select id="case-age" class="w-full p-2 border rounded bg-slate-50">
+                <option>10代</option><option>20代</option><option>30代</option><option>40代</option>
+                <option>50代</option><option>60代</option><option>70代</option><option>80代</option><option>90代以上</option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-1 font-medium">イニシャル/仮名</label>
+              <input type="text" id="case-name" placeholder="例: T.K." class="w-full p-2 border rounded bg-slate-50">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="block mb-1 font-medium">患者ID</label>
+              <input type="text" id="case-id" placeholder="123456" class="w-full p-2 border rounded bg-slate-50">
+            </div>
+            <div>
+              <label class="block mb-1 font-medium">研修区分</label>
+              <select id="case-stage" class="w-full p-2 border rounded bg-slate-50">
+                <option value="senior">専攻医症例</option>
+                <option value="junior">初期研修症例</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="block mb-1 font-medium">病棟/外来</label>
+              <select id="case-setting" class="w-full p-2 border rounded bg-slate-50">
+                <option value="inpatient">病棟症例</option>
+                <option value="outpatient">外来症例</option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-1 font-medium">病歴要約の有無</label>
+              <select id="case-report" class="w-full p-2 border rounded bg-slate-50">
+                <option value="no">なし</option>
+                <option value="yes">あり</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="block mb-1 font-medium">受け持ち開始日</label>
+              <input type="date" id="case-start" class="w-full p-2 border rounded bg-slate-50">
+            </div>
+            <div>
+              <label class="block mb-1 font-medium">受け持ち終了日</label>
+              <input type="date" id="case-end" class="w-full p-2 border rounded bg-slate-50">
+            </div>
+          </div>
+
+          <div class="text-xs">
+            <label class="block mb-1 font-medium">症例概略</label>
+            <textarea id="case-summary" rows="2" placeholder="主訴、診断の経緯、治療概要など" class="w-full p-2 border rounded bg-slate-50"></textarea>
+          </div>
+
+          <div class="text-xs">
+            <label class="block mb-1 font-medium">自己省察 (学び・振り返り)</label>
+            <textarea id="case-reflection" rows="2" placeholder="本症例を通して学んだ点、課題など" class="w-full p-2 border rounded bg-slate-50"></textarea>
+          </div>
+
+          <button onclick="saveCase()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-lg shadow hover:bg-blue-700 transition text-xs">
+            この症例を登録する
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ==================== B. 計算・鑑別アシストエリア ==================== -->
+    <section id="sec-calc" class="hidden space-y-6">
+      <!-- タブナビゲーション -->
+      <div class="flex bg-white border-b border-slate-200 text-xs sm:text-sm rounded-t-xl overflow-hidden">
+        <button id="tab-abg-btn" onclick="switchCalcTab('abg')" class="tab-btn active flex-1 py-3 text-center">🫁 血液ガス</button>
+        <button id="tab-renal-btn" onclick="switchCalcTab('renal')" class="tab-btn flex-1 py-3 text-center">🩺 腎機能(FE)</button>
+        <button id="tab-anemia-btn" onclick="switchCalcTab('anemia')" class="tab-btn flex-1 py-3 text-center">🩸 貧血評価</button>
+      </div>
+
+      <!-- ABG タブ -->
+      <div id="tab-abg" class="space-y-4">
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+          <h2 class="text-sm font-bold text-slate-700 border-b pb-2">1. 血液ガス基本値入力</h2>
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div><label class="block mb-1">pH</label><input type="number" step="0.01" id="abg-ph" placeholder="7.40" class="w-full p-2 border rounded bg-slate-50"></div>
+            <div><label class="block mb-1">PaCO₂ (mmHg)</label><input type="number" step="0.1" id="abg-paco2" placeholder="40" class="w-full p-2 border rounded bg-slate-50"></div>
+            <div><label class="block mb-1">HCO₃⁻ (mEq/L)</label><input type="number" step="0.1" id="abg-hco3" placeholder="24" class="w-full p-2 border rounded bg-slate-50"></div>
+            <div><label class="block mb-1">PaO₂ (mmHg)</label><input type="number" step="0.1" id="abg-pao2" placeholder="90" class="w-full p-2 border rounded bg-slate-50"></div>
+          </div>
+          <div class="flex items-center justify-between text-xs bg-slate-50 p-2 rounded border">
+            <span>病態時系列:</span>
+            <div class="flex gap-3">
+              <label><input type="radio" name="abg-chronicity" value="acute" checked> 急性</label>
+              <label><input type="radio" name="abg-chronicity" value="chronic"> 慢性</label>
+            </div>
+          </div>
+          <button onclick="calcABG()" class="w-full bg-blue-600 text-white font-bold py-2 rounded shadow text-xs">判定を実行</button>
+        </div>
+
+        <div id="abg-step1-result" class="hidden bg-white p-4 rounded-xl border space-y-2 text-xs">
+          <div id="abg-primary-text" class="text-base font-bold text-blue-700"></div>
+          <div id="abg-comp-text" class="bg-slate-100 p-2.5 rounded"></div>
+          <div id="abg-aado2-text" class="bg-blue-50 text-blue-900 p-2.5 rounded"></div>
+        </div>
+
+        <div id="abg-step2-sec" class="hidden bg-white p-5 rounded-xl border space-y-3">
+          <h2 class="text-sm font-bold text-slate-700 border-b pb-2">2. 詳細鑑別用データ入力</h2>
+          <div id="form-met-acid" class="hidden space-y-2 text-xs">
+            <p class="font-bold text-amber-600">■ アニオンギャップ (AG) 評価</p>
+            <div class="grid grid-cols-3 gap-2">
+              <div><label>Na</label><input type="number" id="abg-na" class="w-full p-1.5 border rounded"></div>
+              <div><label>Cl</label><input type="number" id="abg-cl" class="w-full p-1.5 border rounded"></div>
+              <div><label>Alb</label><input type="number" step="0.1" id="abg-alb" placeholder="4.0" class="w-full p-1.5 border rounded"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-1">
+              <div><label>乳酸 (mg/dL)</label><input type="number" step="0.1" id="abg-lac" class="w-full p-1.5 border rounded"></div>
+              <div><label>ケトン体 (μmol/L)</label><input type="number" id="abg-ket" class="w-full p-1.5 border rounded"></div>
+            </div>
+          </div>
+          <div id="form-met-alk" class="hidden space-y-2 text-xs">
+            <p class="font-bold text-amber-600">■ 代謝性アルカローシス 鑑別</p>
+            <div class="grid grid-cols-2 gap-2">
+              <div><label>尿中 Cl</label><input type="number" id="abg-alk-ucl" class="w-full p-1.5 border rounded"></div>
+              <div><label>血清 K</label><input type="number" step="0.1" id="abg-alk-sk" class="w-full p-1.5 border rounded"></div>
+            </div>
+          </div>
+          <button onclick="calcABGStep2()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded shadow text-xs">詳細鑑別を実行</button>
+        </div>
+
+        <div id="abg-final-result" class="hidden bg-emerald-50 border border-emerald-200 p-4 rounded-xl text-xs space-y-2">
+          <div id="abg-final-text"></div>
+        </div>
+      </div>
+
+      <!-- 腎機能 タブ -->
+      <div id="tab-renal" class="hidden space-y-4">
+        <div class="bg-white p-5 rounded-xl border space-y-3">
+          <h2 class="text-sm font-bold text-slate-700 border-b pb-2">排泄分画 (FE) 計算</h2>
+          <div class="space-y-2 text-xs">
+            <p class="font-bold text-blue-600">■ 血液検査</p>
+            <div class="grid grid-cols-3 gap-2">
+              <div><label>sNa</label><input type="number" id="fe-sna" class="w-full p-1.5 border rounded"></div>
+              <div><label>sCr</label><input type="number" step="0.01" id="fe-scr" class="w-full p-1.5 border rounded"></div>
+              <div><label>BUN</label><input type="number" step="0.1" id="fe-bun" class="w-full p-1.5 border rounded"></div>
+            </div>
+            <div class="w-1/3"><label>sUA</label><input type="number" step="0.1" id="fe-sua" class="w-full p-1.5 border rounded"></div>
+          </div>
+          <div class="space-y-2 border-t pt-2 text-xs">
+            <p class="font-bold text-amber-600">■ 尿検査</p>
+            <div class="grid grid-cols-3 gap-2">
+              <div><label>uNa</label><input type="number" id="fe-una" class="w-full p-1.5 border rounded"></div>
+              <div><label>uCr</label><input type="number" step="0.1" id="fe-ucr" class="w-full p-1.5 border rounded"></div>
+              <div><label>uUN</label><input type="number" step="0.1" id="fe-uun" class="w-full p-1.5 border rounded"></div>
+            </div>
+            <div class="w-1/3"><label>uUA</label><input type="number" step="0.1" id="fe-uua" class="w-full p-1.5 border rounded"></div>
+          </div>
+          <button onclick="calcRenal()" class="w-full bg-blue-600 text-white font-bold py-2 rounded shadow text-xs">FE計算を実行</button>
+        </div>
+
+        <div id="renal-result" class="hidden bg-white p-4 rounded-xl border space-y-3">
+          <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <div class="p-2 bg-slate-50 border rounded"><div class="font-bold">FENa</div><div id="res-fena" class="text-sm font-extrabold">--</div></div>
+            <div class="p-2 bg-slate-50 border rounded"><div class="font-bold">FEUN</div><div id="res-feun" class="text-sm font-extrabold">--</div></div>
+            <div class="p-2 bg-slate-50 border rounded"><div class="font-bold">FEUA</div><div id="res-feua" class="text-sm font-extrabold">--</div></div>
+          </div>
+          <div id="renal-diagnosis" class="p-3 rounded text-xs space-y-1"></div>
+        </div>
+      </div>
+
+      <!-- 貧血 タブ -->
+      <div id="tab-anemia" class="hidden space-y-4">
+        <div class="bg-white p-5 rounded-xl border space-y-3">
+          <h2 class="text-sm font-bold text-slate-700 border-b pb-2">CBC・網赤血球 データ入力</h2>
+          <div class="grid grid-cols-3 gap-2 text-xs">
+            <div><label>Hb (g/dL)</label><input type="number" step="0.1" id="ane-hb" class="w-full p-1.5 border rounded"></div>
+            <div><label>Ht (%)</label><input type="number" step="0.1" id="ane-ht" class="w-full p-1.5 border rounded"></div>
+            <div><label>RBC (万)</label><input type="number" step="1" id="ane-rbc" class="w-full p-1.5 border rounded"></div>
+            <div><label>MCV (fL)</label><input type="number" step="0.1" id="ane-mcv" class="w-full p-1.5 border rounded"></div>
+            <div><label>Ret (%)</label><input type="number" step="0.1" id="ane-ret" class="w-full p-1.5 border rounded"></div>
+            <div><label>LDH (U/L)</label><input type="number" id="ane-ldh" class="w-full p-1.5 border rounded"></div>
+          </div>
+          <button onclick="calcAnemiaStep1()" class="w-full bg-rose-600 text-white font-bold py-2 rounded shadow text-xs">一次判定を実行</button>
+        </div>
+
+        <div id="ane-step1-result" class="hidden bg-white p-4 rounded-xl border space-y-3 text-xs">
+          <div class="grid grid-cols-2 gap-2 text-center">
+            <div class="p-2 bg-rose-50 border border-rose-100 rounded"><div class="font-bold text-rose-700">RPI</div><div id="res-rpi" class="text-sm font-extrabold">--</div></div>
+            <div class="p-2 bg-slate-50 border rounded"><div class="font-bold">Mentzer Index</div><div id="res-mentzer" class="text-sm font-extrabold">--</div></div>
+          </div>
+          <div id="ane-primary-diag" class="p-2.5 bg-slate-50 rounded border"></div>
+        </div>
+
+        <div id="ane-step2-sec" class="hidden bg-white p-5 rounded-xl border space-y-3">
+          <h2 class="text-sm font-bold text-slate-700 border-b pb-2">詳細生化学データ入力</h2>
+          <div id="form-microcytic" class="hidden space-y-2 text-xs">
+            <p class="font-bold text-rose-600">■ 鉄代謝</p>
+            <div class="grid grid-cols-3 gap-2">
+              <div><label>Fe</label><input type="number" id="ane-fe" class="w-full p-1.5 border rounded"></div>
+              <div><label>TIBC</label><input type="number" id="ane-tibc" class="w-full p-1.5 border rounded"></div>
+              <div><label>フェリチン</label><input type="number" step="0.1" id="ane-ferritin" class="w-full p-1.5 border rounded"></div>
+            </div>
+          </div>
+          <div id="form-macrocytic" class="hidden space-y-2 text-xs">
+            <p class="font-bold text-purple-600">■ ビタミン</p>
+            <div class="grid grid-cols-2 gap-2">
+              <div><label>ビタミンB₁₂</label><input type="number" id="ane-b12" class="w-full p-1.5 border rounded"></div>
+              <div><label>葉酸</label><input type="number" step="0.1" id="ane-folate" class="w-full p-1.5 border rounded"></div>
+            </div>
+          </div>
+          <button onclick="calcAnemiaStep2()" class="w-full bg-slate-800 text-white font-bold py-2 rounded shadow text-xs">詳細結果を表示</button>
+        </div>
+
+        <div id="ane-final-result" class="hidden bg-rose-50 border border-rose-200 p-4 rounded-xl text-xs space-y-2">
+          <div id="ane-final-text"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script>
+    // ==================== J-OSLER データ構造定義 (分野 ➔ 疾患群 ➔ 病名) ====================
+    const JOSLER_DATA = [
+      {
+        id: "general", name: "総合内科", reqCases: 10, reqGroups: 3, reqReports: 2,
+        note: "※⚠️ 総合内科Ⅰ, Ⅱ, Ⅲの各領域からそれぞれ1つずつ疾患群を登録し、病歴要約も別々の領域から2例作成することが必要です。",
+        groups: [
+          { name: "総合内科Ⅰ (一般)", diseases: ["輸血と移植", "介護と在宅医療", "死", "緩和ケア", "終末期ケア", "喫煙", "睡眠障害(内科疾患合併)", "睡眠薬", "抗不安薬"] },
+          { name: "総合内科Ⅱ (高齢者)", diseases: ["認知症合併慢性疾患 (糖尿病/高血圧等)", "低栄養 (脱水/電解質異常含む)", "嚥下性肺炎", "転倒・骨折・骨粗鬆症", "廃用症候群", "在宅患者", 高齢者終末期医療", "自宅退院ができず、退院調整を必要とする患者", "Polypharmacy"] },
+          { name: "総合内科Ⅲ (腫瘍)", diseases: ["がん薬物療法の副作用と支持療法", "緩和医療・終末期医療", "がんの主要症候 (疼痛/悪心/骨転移)", "腫瘍随伴症候群", "オンコロジーエマージェンシー"] }
+        ]
+      },
+      {
+        id: "gi", name: "消化器", reqCases: 10, reqGroups: 5, reqReports: 3,
+        note: "⚠️ 「消化管」「肝臓」「胆・膵」がそれぞれ含まれていることが必要です。",
+        groups: [
+          { name: "食道・胃・十二指腸疾患 (腫瘍性)", diseases: ["食道癌", "胃良性腫瘍/GIST", "胃癌", "胃悪性リンパ腫"] },
+          { name: "食道・胃・十二指腸疾患 (非腫瘍性)", diseases: ["GERD/NERD", "食道アカラシア", "機能性ディスペプシア(FD)", "食道・胃静脈瘤", "Mallory-Weiss症候群", "急性胃炎/AGML", "慢性胃炎/H.pylori関連", "消化性潰瘍", "その他(胃アニサキス症など)"] },
+          { name: "小腸・大腸疾患 (腫瘍性)", diseases: ["小腸腫瘍", "大腸ポリープ", "大腸癌 (結腸癌/直腸癌/肛門癌)"] },
+          { name: "小腸・大腸疾患 (炎症性/その他)", diseases: ["感染性腸炎", "虫垂炎", "腸結核", "潰瘍性大腸炎", "Crohn病", "胃切除後症候群", "虚血性腸炎", "偽膜性腸炎", "過敏性腸症候群(IBS)", "肛門疾患(痔核/痔瘻/裂孔)"] },
+          { name: "全消化管に関わる疾患", diseases: ["薬物性消化管障害", "憩室性疾患 (憩室炎/出血)", "虚血性腸炎", "過敏性腸症候群(IBS)"] },
+          { name: "肝疾患 (炎症・代謝)", diseases: ["急性肝炎", "慢性肝炎", "自己免疫性肝炎(AIH)", "肝硬変", "アルコール性肝障害", "NAFLD/NASH", "薬物性肝障害"] },
+          { name: "肝疾患 (腫瘍・占拠性)", diseases: ["肝細胞癌", "肝内胆管癌", "転移性肝癌", "肝囊胞/肝膿瘍"] },
+          { name: "胆道・膵臓疾患", diseases: ["胆道結石症", "胆嚢炎・胆管炎", "胆道悪性腫瘍", "急性膵炎", "慢性膵炎・膵石症", "膵癌"] },
+          { name: "腹腔・急性腹症", diseases: ["腸閉塞 (イレウス)", "消化管穿孔", "急性腹膜炎", "癌性腹膜炎"] }
+        ]
+      },
+      {
+        id: "cv", name: "循環器", reqCases: 10, reqGroups: 5, reqReports: 3, note: "",
+        groups: [
+          { name: "虚血性心疾患", diseases: ["不安定狭心症", "急性心筋梗塞", "労作性狭心症", "異型狭心症", "陳旧性心筋梗塞"] },
+          { name: "血圧異常・二次性高血圧", diseases: ["本態性高血圧症", "腎性/腎血管性高血圧症", "原発性アルドステロン症", "褐色細胞腫", "低血圧/起立性調整障害"] },
+          { name: "不整脈・失神", diseases: ["期外収縮", "上室頻拍/WPW", "心房細動/心房粗動", "心室頻拍/心室細動", "洞不全症候群", "房室ブロック", "神経調節性/心原性失神"] },
+          { name: "弁膜症・感染性心内膜炎", diseases: ["感染性心内膜炎", "僧帽弁狭窄症/閉鎖不全症", "大動脈弁狭窄症/閉鎖不全症"] },
+          { name: "心筋・心膜疾患", diseases: ["急性心膜炎/心タンポナーデ", "急性心筋炎", "肥大型/拡張型心筋症", "心アミロイドーシス", "たこつぼ型心筋症"] },
+          { name: "大動脈・末梢血管・肺循環", diseases: ["大動脈解離/大動脈瘤", "閉塞性動脈硬化症(PAD)", "深部静脈血栓症(DVT)", "肺血栓塞栓症(PE)", "肺高血圧症"] },
+          { name: "心不全・ショック", diseases: ["心原性ショック", "急性心不全", "慢性心不全"] }
+        ]
+      },
+      {
+        id: "endo", name: "内分泌", reqCases: 3, reqGroups: 2, reqReports: 1,
+        note: "⚠️ 内分泌1例・代謝2例（計3例）の病歴要約提出が必要です。",
+        groups: [
+          { name: "視床下部・下垂体疾患", diseases: ["先端巨大症", "Cushing病", "プロラクチノーマ", "下垂体前葉機能低下症", "尿崩症", "SIADH"] },
+          { name: "甲状腺疾患", diseases: ["バセドウ病 (Graves病)", "無痛性/亜急性甲状腺炎", "橋本病 (甲状腺機能低下症)", "甲状腺悪性/良性腫瘍"] },
+          { name: "カルシウム・副甲状腺疾患", diseases: ["原発性副甲状腺機能亢進症", "悪性腫瘍に伴う高Ca血症", "副甲状腺機能低下症", "原発性/続発性骨粗鬆症"] },
+          { name: "副腎・性腺疾患", diseases: ["Cushing症候群", "原発性アルドステロン症", "Addison病", "非機能性副腎腫瘍/褐色細胞腫"] }
+        ]
+      },
+      {
+        id: "meta", name: "代謝", reqCases: 10, reqGroups: 3, reqReports: 2,
+        note: "⚠️ 内分泌1例・代謝2例（計3例）の病歴要約提出が必要です。",
+        groups: [
+          { name: "1型糖尿病", diseases: ["1型糖尿病 (劇症/緩徐進行型含む)"] },
+          { name: "2型糖尿病", diseases: ["2型糖尿病"] },
+          { name: "二次性糖尿病・低血糖", diseases: ["二次性/遺伝子異常による糖尿病", "糖尿病合併妊娠", "薬物性/その他の低血糖"] },
+          { name: "糖尿病緊急症・慢性合併症", diseases: ["糖尿病ケトアシドーシス(DKA)", "高血糖高浸透圧症候群(HHS)", "糖尿病網膜症/腎症/神経障害", "大血管障害 (PAD/心脳血管)"] },
+          { name: "肥満・脂質・代謝異常", diseases: ["単純肥満/メタボリックシンドローム", "原発性/続発性脂質異常症", "痛風/無症候性高尿酸血症", "ビタミン/微量元素欠乏症"] }
+        ]
+      },
+      {
+        id: "renal", name: "腎臓", reqCases: 10, reqGroups: 4, reqReports: 2, note: "",
+        groups: [
+          { name: "慢性腎臓病 (CKD)", diseases: ["慢性腎臓病(CKD)", "末期腎不全(ESKD)/透析"] },
+          { name: "急性腎障害 (AKI)", diseases: ["急性腎障害 (腎前性/腎性/腎後性 AKI)"] },
+          { name: "糸球体疾患", diseases: ["一次性ネフローゼ症候群", "IgA腎症", "急速進行性糸球体腎炎(RPGN)", "糖尿病腎症", "ループス腎炎", "ANCA関連血管炎性腎症"] },
+          { name: "尿細管・間質・遺伝性疾患", diseases: ["急性尿細管壊死(ATN)", "薬物性/特発性間質性腎炎", "尿細管性アシドーシス(RTA)", "多発性嚢胞腎(PKD)"] },
+          { name: "腎血管系疾患", diseases: ["腎性/腎血管性高血圧", "良性/悪性腎硬化症", "コレステロール結晶塞栓症", "TTP/HUS"] },
+          { name: "水・電解質・酸塩基異常", diseases: ["脱水症/溢水症/Na代謝異常", "K代謝異常 (高/低K血症)", "Ca/P/Mg異常", "代謝性アシドーシス/アルカローシス"] },
+          { name: "感染・泌尿器系疾患", diseases: ["急性/慢性腎盂腎炎", "下部尿路感染症/膀胱炎", "腎・尿路結石"] }
+        ]
+      },
+      {
+        id: "resp", name: "呼吸器", reqCases: 10, reqGroups: 4, reqReports: 3, note: "",
+        groups: [
+          { name: "感染性呼吸器疾患", diseases: ["感冒/インフルエンザ", "細菌性肺炎 (市中/院内)", "嚥下性肺炎", "マイコプラズマ/クラミジア肺炎", "肺真菌症", "肺結核症/非結核性抗酸菌症(NTM)", "胸膜炎/膿胸"] },
+          { name: "気道・肺の形態・機能異常", diseases: ["気管支拡張症", "慢性閉塞性肺疾患(COPD)", "無気肺"] },
+          { name: "免疫学的肺疾患・間質性肺炎", diseases: ["気管支喘息", "過敏性肺炎", "サルコイドーシス", "膠原病に伴う間質性肺炎", "特発性肺線維症(IPF/IIPs)", "薬剤性/放射線肺障害"] },
+          { name: "肺循環異常", diseases: ["肺うっ血/肺水腫", "急性呼吸促迫症候群(ARDS)", "肺血栓塞栓症/肺高血圧症"] },
+          { name: "呼吸器腫瘍", diseases: ["原発性肺癌 (小細胞/非小細胞)", "良性肺腫瘍/転移性肺腫瘍"] },
+          { name: "胸膜・縦隔・胸郭疾患", diseases: ["気胸/血胸", "悪性胸水", "縦隔腫瘍/縦隔気腫"] },
+          { name: "呼吸不全・調節障害", diseases: ["急性/慢性呼吸不全 (CO₂ナルコーシス)", "閉塞性睡眠時無呼吸症候群(SAS)", "過換気症候群"] }
+        ]
+      },
+      {
+        id: "phem", name: "血液", reqCases: 3, reqGroups: 2, reqReports: 2, note: "",
+        groups: [
+          { name: "赤血球系疾患", diseases: ["出血性貧血", "鉄欠乏性貧血", "巨赤芽球性貧血", "自己免疫性溶血性貧血(AIHA)", "再生不良性貧血", "二次性貧血"] },
+          { name: "白血球系・造血器腫瘍", diseases: ["無顆粒球症", "急性骨髄性/リンパ性白血病(AML/ALL)", "慢性骨髄性/リンパ性白血病(CML/CLL)", "骨髄異形成症候群(MDS)", "真性多血症/MF", "悪性リンパ腫 (Hodgkin/非Hodgkin)", "多発性骨髄腫/MGUS"] },
+          { name: "出血・血栓性疾患", diseases: ["特発性血小板減少性紫斑病(ITP)", "播種性血管内凝固(DIC)", "TTP/HUS", "深部静脈血栓症/抗リン脂質抗体症候群"] }
+        ]
+      },
+      {
+        id: "neuro", name: "神経", reqCases: 10, reqGroups: 5, reqReports: 2, note: "",
+        groups: [
+          { name: "脳血管障害", diseases: ["アテローム/心原性/ラクナ脳梗塞", "一過性脳虚血発作(TIA)", "脳出血", "くも膜下出血", "慢性硬膜下血腫"] },
+          { name: "神経感染症・炎症性疾患", diseases: ["髄膜炎・脳炎・脳膿瘍", "帯状疱疹", "多発性硬化症/視神経脊髄炎(NMO)"] },
+          { name: "末梢神経・筋疾患", diseases: ["Guillain-Barré症候群", "多発筋炎・皮膚筋炎", "重症筋無力症", "糖尿病性/ビタミン欠乏性ニューロパチー", "三叉神経痛/顔面神経麻痺"] },
+          { name: "神経変性疾患", diseases: ["パーキンソン病 (Parkinson病)", "パーキンソン症候群", "筋萎縮性側索硬化症(ALS)", "脊髄小脳変性症"] },
+          { name: "認知症", diseases: ["アルツハイマー型認知症", "レビー小体型認知症", "血管性認知症"] },
+          { name: "機能性・自律神経・脊髄疾患", diseases: ["てんかん", "片頭痛/緊張型頭痛", "良性発作性頭位めまい症(BPPV)", "起立性低血圧", "頸椎症/椎間板ヘルニア/脊髄症"] }
+        ]
+      },
+      {
+        id: "allergy", name: "アレルギー", reqCases: 3, reqGroups: 1, reqReports: 1, note: "",
+        groups: [
+          { name: "気管支喘息・肺疾患", diseases: ["気管支喘息 (NSAIDs過敏喘息含む)", "過敏性肺炎/好酸球性肺炎"] },
+          { name: "全身性アレルギー・その他", diseases: ["アナフィラキシー", "食物/薬物アレルギー", "好酸球多増多症候群/EGPA"] }
+        ]
+      },
+      {
+        id: "collagen", name: "膠原病", reqCases: 3, reqGroups: 1, reqReports: 1, note: "",
+        groups: [
+          { name: "関節リウマチ・類縁疾患", diseases: ["関節リウマチ(RA)", "リウマチ性多発筋痛症(PMR)", "変形性関節症/痛風・偽痛風"] },
+          { name: "全身性膠原病・血管炎", diseases: ["全身性エリテマトーデス(SLE)", "多発性筋炎/皮膚筋炎", "全身性硬化症(強皮症)", "混合性結合組織病(MCTD)", "シェーグレン症候群", "高安動脈炎/顕微鏡的多発血管炎(MPA)", "ANCA関連血管炎/ベーチェット病", "IgG4関連疾患/サルコイドーシス"] }
+        ]
+      },
+      {
+        id: "infect", name: "感染症", reqCases: 8, reqGroups: 2, reqReports: 2, note: "",
+        groups: [
+          { name: "ウイルス・リケッチア感染症", diseases: ["インフルエンザ/帯状疱疹", "HIV感染症/サイトメガロウイルス", "伝染性単核球症(EBV)", "ノロウイルス感染症"] },
+          { name: "クラミジア・マイコプラズマ・スピロヘータ", diseases: ["マイコプラズマ感染症", "クラミジア感染症", "梅毒"] },
+          { name: "細菌感染症", diseases: ["ブドウ球菌/連鎖球菌感染症", "大腸菌/肺炎桿菌等 腸内細菌感染症", "緑膿菌感染症", "結核/非結核性抗酸菌症"] },
+          { name: "真菌・寄生虫感染症", diseases: ["カンジダ/アスペルギルス感染症", "クリプトコックス/ニューモシスチス肺炎"] }
+        ]
+      },
+      {
+        id: "emer", name: "救急", reqCases: 10, reqGroups: 4, reqReports: 2, note: "",
+        groups: [
+          { name: "ショック・心停止", diseases: ["心原性/敗血症性/アナフィラキシーショック", "心停止・心肺蘇生"] },
+          { name: "神経・呼吸・循環救急", diseases: ["急性期脳梗塞/脳出血/てんかん重積", "ARDS/喘息重積/市中肺炎", "急性心筋梗塞/大動脈解離/PE"] },
+          { name: "消化器・腎・代謝・環境救急", diseases: ["吐血・下血 (食道静脈瘤/消化性潰瘍)", "急性腹症 (虫垂炎/胆管炎/穿孔)", "急性腎不全/高K血症/DKA", "熱中症/急性薬物中毒"] }
+        ]
+      },
+      {
+        id: "surg", name: "外科紹介症例", reqCases: 2, reqGroups: 0, reqReports: 2, note: "※疾患群重複可",
+        groups: [
+          { name: "外科紹介症例枠", diseases: ["消化器外科紹介症例", "心臓血管外科紹介症例", "呼吸器外科紹介症例", "その他外科紹介症例"] }
+        ]
+      },
+      {
+        id: "autopsy", name: "剖検症例", reqCases: 1, reqGroups: 0, reqReports: 1, note: "※疾患群重複可",
+        groups: [
+          { name: "剖検症例枠", diseases: ["病理剖検症例 (病歴要約含む)"] }
+        ]
+      }
+    ];
+
+    // LocalStorage状態管理
+    let storedCases = JSON.parse(localStorage.getItem('josler_cases_data') || '[]');
+    let currentFieldId = null;
+    let currentGroupName = null;
+    let currentDiseaseName = null;
+
+    // --- 画面遷移制御 ---
+    function showMainSelection() {
+      document.getElementById('sec-main-selection').classList.remove('hidden');
+      document.getElementById('sec-josler').classList.add('hidden');
+      document.getElementById('sec-calc').classList.add('hidden');
+      document.getElementById('btn-to-main').classList.add('hidden');
+      document.getElementById('header-title').innerText = 'Doctor Support App';
+    }
+
+    function openJosler() {
+      document.getElementById('sec-main-selection').classList.add('hidden');
+      document.getElementById('sec-josler').classList.remove('hidden');
+      document.getElementById('btn-to-main').classList.remove('hidden');
+      document.getElementById('header-title').innerText = 'J-OSLER 症例登録';
+      navToFields();
+      updateJoslerSummary();
+    }
+
+    function openCalc() {
+      document.getElementById('sec-main-selection').classList.add('hidden');
+      document.getElementById('sec-calc').classList.remove('hidden');
+      document.getElementById('btn-to-main').classList.remove('hidden');
+      document.getElementById('header-title').innerText = '計算・鑑別アシスト';
+    }
+
+    function navToFields() {
+      document.getElementById('josler-view-fields').classList.remove('hidden');
+      document.getElementById('josler-view-groups').classList.add('hidden');
+      document.getElementById('josler-view-diseases').classList.add('hidden');
+      document.getElementById('josler-view-cases').classList.add('hidden');
+      renderFieldsList();
+    }
+
+    function navToGroups(fieldId) {
+      if(fieldId) currentFieldId = fieldId;
+      const field = JOSLER_DATA.find(f => f.id === currentFieldId);
+
+      // 分野内集計
+      const fieldGroupsNames = field.groups.map(g => g.name);
+      const fieldCases = storedCases.filter(c => fieldGroupsNames.includes(c.groupName));
+      const caseCount = fieldCases.length;
+      const uniqueGroupsCount = new Set(fieldCases.map(c => c.groupName)).size;
+      const reportCount = fieldCases.filter(c => c.report === 'yes').length;
+      const jrCount = fieldCases.filter(c => c.stage === 'junior').length;
+      const outCount = fieldCases.filter(c => c.setting === 'outpatient').length;
+
+      document.getElementById('field-status-title').innerText = `📊 ${field.name} 進捗ステータス`;
+      document.getElementById('field-req-badge').innerText = `修了要件: ${field.reqCases}例 / ${field.reqGroups}疾患群 / 要約${field.reqReports}例`;
+      
+      document.getElementById('field-summary-cases').innerText = `${caseCount} / ${field.reqCases}`;
+      document.getElementById('field-summary-groups').innerText = `${uniqueGroupsCount} / ${field.reqGroups}`;
+      document.getElementById('field-summary-reports').innerText = `${reportCount} / ${field.reqReports}`;
+      document.getElementById('field-summary-jr').innerText = `${jrCount} 例`;
+      document.getElementById('field-summary-outpatient').innerText = `${outCount} 例`;
+
+      const warnEl = document.getElementById('current-field-warning');
+      if (field.note) {
+        warnEl.innerText = field.note;
+        warnEl.classList.remove('hidden');
+      } else {
+        warnEl.classList.add('hidden');
+      }
+
+      document.getElementById('josler-view-fields').classList.add('hidden');
+      document.getElementById('josler-view-groups').classList.remove('hidden');
+      document.getElementById('josler-view-diseases').classList.add('hidden');
+      document.getElementById('josler-view-cases').classList.add('hidden');
+      renderGroupsList(field);
+    }
+
+    function navToDiseases(groupName) {
+      if(groupName) currentGroupName = groupName;
+      const field = JOSLER_DATA.find(f => f.id === currentFieldId);
+      const groupObj = field.groups.find(g => g.name === currentGroupName);
+
+      document.getElementById('current-group-title').innerText = currentGroupName;
+
+      document.getElementById('josler-view-groups').classList.add('hidden');
+      document.getElementById('josler-view-diseases').classList.remove('hidden');
+      document.getElementById('josler-view-cases').classList.add('hidden');
+      renderDiseasesList(groupObj);
+    }
+
+    function navToCases(diseaseName) {
+      if(diseaseName) currentDiseaseName = diseaseName;
+      document.getElementById('current-disease-title').innerText = currentDiseaseName;
+      document.getElementById('current-disease-sub').innerText = `疾患群: ${currentGroupName}`;
+
+      document.getElementById('josler-view-diseases').classList.add('hidden');
+      document.getElementById('josler-view-cases').classList.remove('hidden');
+      renderCasesList();
+    }
+
+    // --- レンダリング系 ---
+    function renderFieldsList() {
+      const container = document.getElementById('fields-list');
+      container.innerHTML = '';
+
+      JOSLER_DATA.forEach(f => {
+        const fieldGroupsNames = f.groups.map(g => g.name);
+        const fieldCases = storedCases.filter(c => fieldGroupsNames.includes(c.groupName));
+        const caseCount = fieldCases.length;
+        const uniqueGroupsCount = new Set(fieldCases.map(c => c.groupName)).size;
+        const reportCount = fieldCases.filter(c => c.report === 'yes').length;
+
+        // 全要件達成判定 (症例数, 疾患群数, 病歴要約数)
+        const isCompleted = (caseCount >= f.reqCases) && (uniqueGroupsCount >= f.reqGroups) && (reportCount >= f.reqReports);
+
+        const btn = document.createElement('button');
+        btn.className = `w-full p-3.5 rounded-xl border hover:border-blue-400 text-left flex justify-between items-center shadow-sm transition ${isCompleted ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-slate-200'}`;
+        btn.onclick = () => navToGroups(f.id);
+        btn.innerHTML = `
+          <div>
+            <div class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+              ${f.name}
+              ${isCompleted ? '<span class="text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded-full font-bold">達成</span>' : ''}
+            </div>
+            <div class="text-[11px] text-slate-500">要件: ${f.reqCases}例 / ${f.reqGroups}疾患群 / 要約${f.reqReports}例</div>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-extrabold ${isCompleted ? 'text-emerald-700' : 'text-blue-600'}">${caseCount} 例</span>
+            <div class="text-[10px] text-slate-400">要約 ${reportCount} 例</div>
+          </div>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function renderGroupsList(field) {
+      const container = document.getElementById('groups-list');
+      container.innerHTML = '';
+
+      field.groups.forEach(gObj => {
+        const groupCases = storedCases.filter(c => c.groupName === gObj.name);
+        const caseCount = groupCases.length;
+        const diseaseCount = gObj.diseases.length;
+
+        const btn = document.createElement('button');
+        btn.className = "w-full bg-white p-3 rounded-lg border text-left flex justify-between items-center hover:bg-slate-50 shadow-sm";
+        btn.onclick = () => navToDiseases(gObj.name);
+        btn.innerHTML = `
+          <div>
+            <div class="text-xs font-bold text-slate-800">${gObj.name}</div>
+            <div class="text-[10px] text-slate-400">含まれる疾患項目: ${diseaseCount} 病名</div>
+          </div>
+          <span class="text-xs font-bold ${caseCount > 0 ? 'text-emerald-600' : 'text-slate-400'}">${caseCount} 症例</span>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function renderDiseasesList(groupObj) {
+      const container = document.getElementById('diseases-list');
+      container.innerHTML = '';
+
+      groupObj.diseases.forEach(dName => {
+        const diseaseCases = storedCases.filter(c => c.diseaseName === dName);
+        const count = diseaseCases.length;
+
+        const btn = document.createElement('button');
+        btn.className = "w-full bg-white p-3 rounded-lg border text-left flex justify-between items-center hover:bg-blue-50 transition border-slate-200";
+        btn.onclick = () => navToCases(dName);
+        btn.innerHTML = `
+          <span class="text-xs font-bold text-slate-700">📌 ${dName}</span>
+          <span class="text-xs font-bold ${count > 0 ? 'text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200' : 'text-slate-400'}">${count} 症例</span>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function renderCasesList() {
+      const container = document.getElementById('cases-list');
+      container.innerHTML = '';
+
+      const matched = storedCases.filter(c => c.diseaseName === currentDiseaseName);
+
+      if(matched.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 text-center py-2">この病名にはまだ症例が登録されていません。</p>`;
+        return;
+      }
+
+      matched.forEach(c => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-50 p-3 rounded-lg border text-xs space-y-1 relative";
+        card.innerHTML = `
+          <div class="flex justify-between items-start pr-6">
+            <span class="font-bold text-slate-800">${c.age} / ${c.name} (ID: ${c.id})</span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] ${c.stage==='senior'?'bg-blue-100 text-blue-800':'bg-emerald-100 text-emerald-800'}">
+              ${c.stage==='senior'?'専攻医':'初期研修'}
+            </span>
+          </div>
+          <div class="text-[11px] text-slate-500">
+            ${c.setting==='inpatient'?'病棟':'外来'} | 病歴要約: <strong class="${c.report==='yes'?'text-purple-600':''}">${c.report==='yes'?'あり':'なし'}</strong> | ${c.start} 〜 ${c.end}
+          </div>
+          ${c.summary ? `<div class="bg-white p-2 rounded border mt-1 text-slate-700"><strong>概略:</strong> ${c.summary}</div>` : ''}
+          ${c.reflection ? `<div class="bg-white p-2 rounded border text-slate-700"><strong>省察:</strong> ${c.reflection}</div>` : ''}
+          <button onclick="deleteCase('${c.uuid}')" class="absolute top-2 right-2 text-rose-500 font-bold hover:bg-rose-50 px-1 rounded">✕</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // --- データ保存・更新 ---
+    function saveCase() {
+      const name = document.getElementById('case-name').value || '匿名';
+      const id = document.getElementById('case-id').value || '--';
+      const age = document.getElementById('case-age').value;
+      const stage = document.getElementById('case-stage').value;
+      const setting = document.getElementById('case-setting').value;
+      const report = document.getElementById('case-report').value;
+      const start = document.getElementById('case-start').value || '未設定';
+      const end = document.getElementById('case-end').value || '未設定';
+      const summary = document.getElementById('case-summary').value;
+      const reflection = document.getElementById('case-reflection').value;
+
+      const newCase = {
+        uuid: Date.now().toString(),
+        groupName: currentGroupName,
+        diseaseName: currentDiseaseName,
+        name, id, age, stage, setting, report, start, end, summary, reflection
+      };
+
+      storedCases.push(newCase);
+      localStorage.setItem('josler_cases_data', JSON.stringify(storedCases));
+
+      // フォームリセット
+      document.getElementById('case-name').value = '';
+      document.getElementById('case-id').value = '';
+      document.getElementById('case-summary').value = '';
+      document.getElementById('case-reflection').value = '';
+
+      renderCasesList();
+      updateJoslerSummary();
+      alert('症例を登録しました。');
+    }
+
+    function deleteCase(uuid) {
+      if(!confirm('この症例を削除しますか？')) return;
+      storedCases = storedCases.filter(c => c.uuid !== uuid);
+      localStorage.setItem('josler_cases_data', JSON.stringify(storedCases));
+      renderCasesList();
+      updateJoslerSummary();
+    }
+
+    function updateJoslerSummary() {
+      const totalCases = storedCases.length;
+      const uniqueGroups = new Set(storedCases.map(c => c.groupName)).size;
+      const totalReports = storedCases.filter(c => c.report === 'yes').length;
+      
+      const jrCases = storedCases.filter(c => c.stage === 'junior').length;
+      const jrReports = storedCases.filter(c => c.stage === 'junior' && c.report === 'yes').length;
+
+      const outCases = storedCases.filter(c => c.setting === 'outpatient').length;
+      const outReports = storedCases.filter(c => c.setting === 'outpatient' && c.report === 'yes').length;
+
+      document.getElementById('summary-cases').innerText = `${totalCases} / 120`;
+      document.getElementById('summary-groups').innerText = `${uniqueGroups} / 56`;
+      document.getElementById('summary-reports').innerText = `${totalReports} / 29`;
+      document.getElementById('summary-jr').innerText = `${jrCases} 例 (病歴要約 ${jrReports}/14)`;
+      document.getElementById('summary-outpatient').innerText = `${outCases} 例 (病歴要約 ${outReports}/7)`;
+    }
+
+    // --- バックアップ・復元 ---
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(storedCases));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `josler_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importData() {
+      document.getElementById('import-file').click();
+    }
+
+    function handleFileImport(e) {
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const imported = JSON.parse(evt.target.result);
+          if(Array.isArray(imported)) {
+            storedCases = imported;
+            localStorage.setItem('josler_cases_data', JSON.stringify(storedCases));
+            updateJoslerSummary();
+            renderFieldsList();
+            alert('データを正常に復元しました。');
+          }
+        } catch(err) {
+          alert('ファイルの読み込みに失敗しました。正しいJSON形式か確認してください。');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+
+    // ==================== 計算アシスト (ABG/FE/貧血) ロジック ====================
+    function switchCalcTab(tab) {
+      document.getElementById('tab-abg').classList.add('hidden');
+      document.getElementById('tab-renal').classList.add('hidden');
+      document.getElementById('tab-anemia').classList.add('hidden');
+      document.getElementById('tab-abg-btn').classList.remove('active');
+      document.getElementById('tab-renal-btn').classList.remove('active');
+      document.getElementById('tab-anemia-btn').classList.remove('active');
+
+      if(tab === 'abg') {
+        document.getElementById('tab-abg').classList.remove('hidden');
+        document.getElementById('tab-abg-btn').classList.add('active');
+      } else if(tab === 'renal') {
+        document.getElementById('tab-renal').classList.remove('hidden');
+        document.getElementById('tab-renal-btn').classList.add('active');
+      } else {
+        document.getElementById('tab-anemia').classList.remove('hidden');
+        document.getElementById('tab-anemia-btn').classList.add('active');
+      }
+    }
+
+    let abgState = { primary: '' };
+    function calcABG() {
+      const ph = parseFloat(document.getElementById('abg-ph').value);
+      const paco2 = parseFloat(document.getElementById('abg-paco2').value);
+      const hco3 = parseFloat(document.getElementById('abg-hco3').value);
+      const pao2 = parseFloat(document.getElementById('abg-pao2').value);
+      const chronicity = document.querySelector('input[name="abg-chronicity"]:checked').value;
+
+      if(!ph || !paco2 || !hco3) return alert('pH, PaCO₂, HCO₃⁻ を入力してください。');
+
+      let acidBaseText = ph < 7.38 ? 'アシデミア' : (ph > 7.42 ? 'アルカリミア' : '正常範囲 pH');
+      let primary = ph < 7.38 ? (hco3 < 22 ? '代謝性アシドーシス' : (paco2 > 42 ? '呼吸性アシドーシス' : '複合性障害'))
+                             : (hco3 > 26 ? '代謝性アルカローシス' : (paco2 < 38 ? '呼吸性アルカローシス' : '複合性障害'));
+      abgState.primary = primary;
+
+      let compText = '';
+      if (primary === '代謝性アシドーシス') {
+        const expectedPaCO2 = 40 - ((24 - hco3) * 1.3);
+        const diff = paco2 - expectedPaCO2;
+        compText = Math.abs(diff) <= 2 ? `代償適正 (予測 PaCO₂: ~${expectedPaCO2.toFixed(1)})` : (diff > 2 ? `PaCO₂高値 ➔ 呼吸性アシドーシス併発` : `PaCO₂低値 ➔ 呼吸性アルカローシス併発`);
+      } else if (primary === '代謝性アルカローシス') {
+        const expectedPaCO2 = 40 + ((hco3 - 24) * 0.7);
+        const diff = paco2 - expectedPaCO2;
+        compText = Math.abs(diff) <= 2 ? `代償適正 (予測 PaCO₂: ~${expectedPaCO2.toFixed(1)})` : (diff > 2 ? `PaCO₂高値 ➔ 呼吸性アシドーシス併発` : `PaCO₂低値 ➔ 呼吸性アルカローシス併発`);
+      }
+
+      document.getElementById('abg-primary-text').innerHTML = `${acidBaseText} <span class="text-xs text-slate-600">(${primary})</span>`;
+      document.getElementById('abg-comp-text').innerHTML = `<strong>代償評価:</strong> ${compText}`;
+      document.getElementById('abg-aado2-text').innerHTML = pao2 ? `A-aDO₂: ${((150 - (paco2 / 0.8)) - pao2).toFixed(1)} mmHg` : 'PaO₂未入力';
+      document.getElementById('abg-step1-result').classList.remove('hidden');
+
+      document.getElementById('abg-step2-sec').classList.remove('hidden');
+      document.getElementById('form-met-acid').classList.add('hidden');
+      document.getElementById('form-met-alk').classList.add('hidden');
+      if (primary === '代謝性アシドーシス') document.getElementById('form-met-acid').classList.remove('hidden');
+      if (primary === '代謝性アルカローシス') document.getElementById('form-met-alk').classList.remove('hidden');
+    }
+
+    function calcABGStep2() {
+      const primary = abgState.primary;
+      const hco3 = parseFloat(document.getElementById('abg-hco3').value);
+      let outHtml = '';
+
+      if (primary === '代謝性アシドーシス') {
+        const na = parseFloat(document.getElementById('abg-na').value);
+        const cl = parseFloat(document.getElementById('abg-cl').value);
+        const alb = parseFloat(document.getElementById('abg-alb').value) || 4.0;
+        if(!na || !cl) return alert('Na, Clを入力してください。');
+
+        const ag = na - (cl + hco3);
+        const corrAG = ag + 2.5 * (4.0 - alb);
+        outHtml += `<p>・AG: ${ag.toFixed(1)} (補正AG: ${corrAG.toFixed(1)})</p>`;
+        outHtml += corrAG > 12 ? `<p class="font-bold text-red-600">➔ AG開大性 代謝性アシドーシス</p>` : `<p class="font-bold text-blue-600">➔ AG非開大性 (高Cl性)</p>`;
+      } else if (primary === '代謝性アルカローシス') {
+        const ucl = parseFloat(document.getElementById('abg-alk-ucl').value);
+        if (ucl < 10) outHtml += `・尿Cl &lt; 10 ➔ 低Cl性 (嘔吐等)`;
+        else if (ucl > 20) outHtml += `・尿Cl &gt; 20 ➔ R-A-A系亢進疑い`;
+      }
+      document.getElementById('abg-final-text').innerHTML = outHtml;
+      document.getElementById('abg-final-result').classList.remove('hidden');
+    }
+
+    function calcRenal() {
+      const sNa = parseFloat(document.getElementById('fe-sna').value);
+      const sCr = parseFloat(document.getElementById('fe-scr').value);
+      const bun = parseFloat(document.getElementById('fe-bun').value);
+      const sUA = parseFloat(document.getElementById('fe-sua').value);
+      const uNa = parseFloat(document.getElementById('fe-una').value);
+      const uCr = parseFloat(document.getElementById('fe-ucr').value);
+      const uUN = parseFloat(document.getElementById('fe-uun').value);
+      const uUA = parseFloat(document.getElementById('fe-uua').value);
+
+      if (!sCr || !uCr) return alert('sCr と uCr は必須です。');
+
+      let feNa = (sNa && uNa) ? ((uNa * sCr) / (sNa * uCr) * 100) : null;
+      let feUN = (bun && uUN) ? ((uUN * sCr) / (bun * uCr) * 100) : null;
+      let feUA = (sUA && uUA) ? ((uUA * sCr) / (sUA * uCr) * 100) : null;
+
+      document.getElementById('res-fena').innerText = feNa !== null ? feNa.toFixed(2) + ' %' : '--';
+      document.getElementById('res-feun').innerText = feUN !== null ? feUN.toFixed(2) + ' %' : '--';
+      document.getElementById('res-feua').innerText = feUA !== null ? feUA.toFixed(2) + ' %' : '--';
+
+      const diagEl = document.getElementById('renal-diagnosis');
+      let isPrerenal = (feNa !== null && feNa < 1.0) || (feUN !== null && feUN < 35.0);
+      let isRenal = (feNa !== null && feNa > 2.0) || (feUN !== null && feUN > 50.0);
+
+      if (isPrerenal && !isRenal) {
+        diagEl.className = 'p-3 rounded text-xs bg-amber-50 text-amber-900 border border-amber-200';
+        diagEl.innerHTML = `<strong>腎前性AKI (Prerenal) 疑い</strong><br>FENa &lt; 1% または FEUN &lt; 35%`;
+      } else if (isRenal) {
+        diagEl.className = 'p-3 rounded text-xs bg-red-50 text-red-900 border border-red-200';
+        diagEl.innerHTML = `<strong>腎性AKI (Intrinsical) 疑い</strong><br>FENa &gt; 2% または FEUN &gt; 50%`;
+      } else {
+        diagEl.className = 'p-3 rounded text-xs bg-slate-100 border';
+        diagEl.innerHTML = `判定保留 / 臨床所見を併せてご判断ください`;
+      }
+      document.getElementById('renal-result').classList.remove('hidden');
+    }
+
+    let anemiaState = { mcvType: '', rpi: 0 };
+    function calcAnemiaStep1() {
+      const ht = parseFloat(document.getElementById('ane-ht').value);
+      const rbc = parseFloat(document.getElementById('ane-rbc').value);
+      const mcv = parseFloat(document.getElementById('ane-mcv').value);
+      const ret = parseFloat(document.getElementById('ane-ret').value);
+
+      if (!ht || !ret || !mcv) return alert('Ht, Ret(%), MCV は必須入力です。');
+
+      const matTime = Math.max(1.0, 3.25 - (ht * 0.05));
+      const rpi = (ret * (ht / 45.0)) / matTime;
+      anemiaState.rpi = rpi;
+      anemiaState.mcvType = mcv < 80 ? 'micro' : (mcv > 100 ? 'macro' : 'normo');
+
+      document.getElementById('res-rpi').innerText = rpi.toFixed(2);
+      document.getElementById('res-mentzer').innerText = rbc ? (mcv / (rbc / 100.0)).toFixed(1) : '--';
+
+      document.getElementById('ane-primary-diag').innerHTML = `
+        <strong>MCV分類:</strong> ${mcv < 80 ? '小球性' : (mcv > 100 ? '大球性' : '正球性')}<br>
+        <strong>RPI判定:</strong> ${rpi >= 2.0 ? '赤血球生産亢進 (溶血/出血)' : '生産低下パターン'}
+      `;
+      document.getElementById('ane-step1-result').classList.remove('hidden');
+
+      document.getElementById('ane-step2-sec').classList.remove('hidden');
+      document.getElementById('form-microcytic').classList.add('hidden');
+      document.getElementById('form-macrocytic').classList.add('hidden');
+      if (anemiaState.mcvType === 'micro') document.getElementById('form-microcytic').classList.remove('hidden');
+      if (anemiaState.mcvType === 'macro') document.getElementById('form-macrocytic').classList.remove('hidden');
+    }
+
+    function calcAnemiaStep2() {
+      const mcvType = anemiaState.mcvType;
+      let outHtml = '';
+
+      if (mcvType === 'micro') {
+        const ferritin = parseFloat(document.getElementById('ane-ferritin').value);
+        if (ferritin) {
+          outHtml += ferritin < 20 ? `<strong>➔ 鉄欠乏性貧血 (IDA) 確実</strong>` : `<strong>➔ ACD / その他の原因を考慮</strong>`;
+        } else {
+          outHtml += `フェリチン・鉄代謝パネルを入力してください。`;
+        }
+      } else if (mcvType === 'macro') {
+        const b12 = parseFloat(document.getElementById('ane-b12').value);
+        const folate = parseFloat(document.getElementById('ane-folate').value);
+        if (b12 && b12 < 200) outHtml += `<strong>➔ ビタミンB₁₂ 欠乏症</strong><br>`;
+        if (folate && folate < 3.0) outHtml += `<strong>➔ 葉酸 欠乏症</strong>`;
+      }
+      document.getElementById('ane-final-text').innerHTML = outHtml || '詳細所見を入力してください。';
+      document.getElementById('ane-final-result').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
