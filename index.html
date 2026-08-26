@@ -266,51 +266,113 @@
       <!-- ABG タブ -->
       <div id="tab-abg" class="space-y-4">
         <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
-          <h2 class="text-sm font-bold text-slate-700 border-b pb-2">1. 血液ガス基本値入力</h2>
+          <h2 class="text-sm font-bold text-slate-700 border-b pb-2">1. 血液ガス基本値＆酸素投与量入力</h2>
           <div class="grid grid-cols-2 gap-3 text-xs">
-            <div><label class="block mb-1">pH</label><input type="number" step="0.01" id="abg-ph" placeholder="7.40" class="w-full p-2 border rounded bg-slate-50"></div>
-            <div><label class="block mb-1">PaCO₂ (mmHg)</label><input type="number" step="0.1" id="abg-paco2" placeholder="40" class="w-full p-2 border rounded bg-slate-50"></div>
-            <div><label class="block mb-1">HCO₃⁻ (mEq/L)</label><input type="number" step="0.1" id="abg-hco3" placeholder="24" class="w-full p-2 border rounded bg-slate-50"></div>
-            <div><label class="block mb-1">PaO₂ (mmHg)</label><input type="number" step="0.1" id="abg-pao2" placeholder="90" class="w-full p-2 border rounded bg-slate-50"></div>
+            <div><label class="block mb-1 font-medium">pH</label><input type="number" step="0.01" id="abg-ph" placeholder="7.40" class="w-full p-2 border rounded bg-slate-50"></div>
+            <div><label class="block mb-1 font-medium">PaCO₂ (mmHg)</label><input type="number" step="0.1" id="abg-paco2" placeholder="40" class="w-full p-2 border rounded bg-slate-50"></div>
+            <div><label class="block mb-1 font-medium">HCO₃⁻ (mEq/L)</label><input type="number" step="0.1" id="abg-hco3" placeholder="24" class="w-full p-2 border rounded bg-slate-50"></div>
+            <div><label class="block mb-1 font-medium">PaO₂ (mmHg)</label><input type="number" step="0.1" id="abg-pao2" placeholder="90" class="w-full p-2 border rounded bg-slate-50"></div>
           </div>
-          <div class="flex items-center justify-between text-xs bg-slate-50 p-2 rounded border">
-            <span>病態時系列:</span>
-            <div class="flex gap-3">
-              <label><input type="radio" name="abg-chronicity" value="acute" checked> 急性</label>
-              <label><input type="radio" name="abg-chronicity" value="chronic"> 慢性</label>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+            <div>
+              <label class="block mb-1 font-medium">酸素投与デバイス / 流量</label>
+              <select id="abg-o2-flow" onchange="updateFiO2FromFlow()" class="w-full p-2 border rounded bg-slate-50 text-xs">
+                <option value="21">室内気 (RA) - 21%</option>
+                <option value="24">鼻カニュラ 1 L/min - 24%</option>
+                <option value="28">鼻カニュラ 2 L/min - 28%</option>
+                <option value="32">鼻カニュラ 3 L/min - 32%</option>
+                <option value="36">鼻カニュラ 4 L/min - 36%</option>
+                <option value="40">鼻カニュラ 5 L/min - 40%</option>
+                <option value="40_mask">簡易酸素マスク 5〜6 L/min - 40%</option>
+                <option value="50_mask">簡易酸素マスク 6〜7 L/min - 50%</option>
+                <option value="60_mask">簡易酸素マスク 7〜8 L/min - 60%</option>
+                <option value="60_res">リザーバー付マスク 6 L/min - 60%</option>
+                <option value="70_res">リザーバー付マスク 7 L/min - 70%</option>
+                <option value="80_res">リザーバー付マスク 8 L/min - 80%</option>
+                <option value="90_res">リザーバー付マスク 9 L/min - 90%</option>
+                <option value="95_res">リザーバー付マスク 10 L/min - 95%</option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-1 font-medium">吸入酸素濃度 FiO₂ (%)</label>
+              <input type="number" step="1" id="abg-fio2" value="21" min="21" max="100" class="w-full p-2 border rounded bg-slate-50">
             </div>
           </div>
-          <button onclick="calcABG()" class="w-full bg-blue-600 text-white font-bold py-2 rounded shadow text-xs">判定を実行</button>
+
+          <div class="flex items-center justify-between text-xs bg-slate-50 p-2.5 rounded border">
+            <span class="font-medium">病態時系列 (呼吸性評価用):</span>
+            <div class="flex gap-4">
+              <label class="cursor-pointer"><input type="radio" name="abg-chronicity" value="acute" checked class="mr-1"> 急性</label>
+              <label class="cursor-pointer"><input type="radio" name="abg-chronicity" value="chronic" class="mr-1"> 慢性</label>
+            </div>
+          </div>
+          <button onclick="calcABG()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-lg shadow hover:bg-blue-700 transition text-xs">一次判定を実行</button>
         </div>
 
-        <div id="abg-step1-result" class="hidden bg-white p-4 rounded-xl border space-y-2 text-xs">
-          <div id="abg-primary-text" class="text-base font-bold text-blue-700"></div>
-          <div id="abg-comp-text" class="bg-slate-100 p-2.5 rounded"></div>
-          <div id="abg-aado2-text" class="bg-blue-50 text-blue-900 p-2.5 rounded"></div>
+        <div id="abg-step1-result" class="hidden bg-white p-4 rounded-xl border space-y-2.5 text-xs">
+          <div id="abg-primary-text" class="text-base font-extrabold text-blue-800 border-b pb-1"></div>
+          <div id="abg-comp-text" class="bg-slate-50 p-2.5 rounded border border-slate-200"></div>
+          <div id="abg-oxygenation-text" class="bg-blue-50 text-blue-900 p-2.5 rounded border border-blue-100 space-y-1"></div>
         </div>
 
-        <div id="abg-step2-sec" class="hidden bg-white p-5 rounded-xl border space-y-3">
+        <div id="abg-step2-sec" class="hidden bg-white p-5 rounded-xl border space-y-4">
           <h2 class="text-sm font-bold text-slate-700 border-b pb-2">2. 詳細鑑別用データ入力</h2>
-          <div id="form-met-acid" class="hidden space-y-2 text-xs">
-            <p class="font-bold text-amber-600">■ アニオンギャップ (AG) 評価</p>
+          
+          <!-- 代謝性アシドーシス用データ入力 -->
+          <div id="form-met-acid" class="hidden space-y-3 text-xs">
+            <p class="font-bold text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">■ 補正アニオンギャップ (AG) 算出</p>
             <div class="grid grid-cols-3 gap-2">
-              <div><label>Na</label><input type="number" id="abg-na" class="w-full p-1.5 border rounded"></div>
-              <div><label>Cl</label><input type="number" id="abg-cl" class="w-full p-1.5 border rounded"></div>
-              <div><label>Alb</label><input type="number" step="0.1" id="abg-alb" placeholder="4.0" class="w-full p-1.5 border rounded"></div>
+              <div><label class="block mb-1">血清 Na (mEq/L)</label><input type="number" id="abg-na" class="w-full p-2 border rounded bg-slate-50"></div>
+              <div><label class="block mb-1">血清 Cl (mEq/L)</label><input type="number" id="abg-cl" class="w-full p-2 border rounded bg-slate-50"></div>
+              <div><label class="block mb-1">Alb (g/dL)</label><input type="number" step="0.1" id="abg-alb" placeholder="4.0" class="w-full p-2 border rounded bg-slate-50"></div>
             </div>
-            <div class="grid grid-cols-2 gap-2 pt-1">
-              <div><label>乳酸 (mg/dL)</label><input type="number" step="0.1" id="abg-lac" class="w-full p-1.5 border rounded"></div>
-              <div><label>ケトン体 (μmol/L)</label><input type="number" id="abg-ket" class="w-full p-1.5 border rounded"></div>
+
+            <!-- AG開大時の追加入力 -->
+            <div id="form-ag-opened-sec" class="space-y-3 border-t pt-2 mt-2">
+              <p class="font-bold text-slate-700">【AG開大時】乳酸・ケトン・浸透圧ギャップ測定データ</p>
+              <div class="grid grid-cols-2 gap-2">
+                <div><label class="block mb-1">乳酸 Lac (mmol/L)</label><input type="number" step="0.1" id="abg-lac" placeholder="任意" class="w-full p-2 border rounded bg-slate-50"></div>
+                <div><label class="block mb-1">血清ケトン体 (μmol/L)</label><input type="number" id="abg-ket" placeholder="任意" class="w-full p-2 border rounded bg-slate-50"></div>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <div><label class="block mb-1">血糖 Glu (mg/dL)</label><input type="number" id="abg-glu" placeholder="任意" class="w-full p-2 border rounded bg-slate-50"></div>
+                <div><label class="block mb-1">BUN (mg/dL)</label><input type="number" step="0.1" id="abg-bun" placeholder="任意" class="w-full p-2 border rounded bg-slate-50"></div>
+                <div><label class="block mb-1">血清浸透圧 (mOsm/kg)</label><input type="number" id="abg-meas-osm" placeholder="任意" class="w-full p-2 border rounded bg-slate-50"></div>
+              </div>
+            </div>
+
+            <!-- AG非開大時の尿中データ入力 -->
+            <div id="form-ag-normal-sec" class="space-y-3 border-t pt-2 mt-2">
+              <p class="font-bold text-slate-700">【AG非開大 (高Cl性) 時】尿中電解質・尿pHデータ</p>
+              <div class="grid grid-cols-3 gap-2">
+                <div><label class="block mb-1">尿中 Na (mEq/L)</label><input type="number" id="abg-una" class="w-full p-2 border rounded bg-slate-50"></div>
+                <div><label class="block mb-1">尿中 K (mEq/L)</label><input type="number" id="abg-uk" class="w-full p-2 border rounded bg-slate-50"></div>
+                <div><label class="block mb-1">尿中 Cl (mEq/L)</label><input type="number" id="abg-ucl" class="w-full p-2 border rounded bg-slate-50"></div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div><label class="block mb-1">血清 K (mEq/L)</label><input type="number" step="0.1" id="abg-sk" class="w-full p-2 border rounded bg-slate-50"></div>
+                <div><label class="block mb-1">尿 pH</label><input type="number" step="0.1" id="abg-uph" class="w-full p-2 border rounded bg-slate-50"></div>
+              </div>
             </div>
           </div>
-          <div id="form-met-alk" class="hidden space-y-2 text-xs">
-            <p class="font-bold text-amber-600">■ 代謝性アルカローシス 鑑別</p>
-            <div class="grid grid-cols-2 gap-2">
-              <div><label>尿中 Cl</label><input type="number" id="abg-alk-ucl" class="w-full p-1.5 border rounded"></div>
-              <div><label>血清 K</label><input type="number" step="0.1" id="abg-alk-sk" class="w-full p-1.5 border rounded"></div>
+
+          <!-- 代謝性アルカローシス用データ入力 -->
+          <div id="form-met-alk" class="hidden space-y-3 text-xs">
+            <p class="font-bold text-emerald-700 bg-emerald-50 p-2 rounded border border-emerald-200">■ 代謝性アルカローシス 詳細鑑別データ</p>
+            <div class="grid grid-cols-3 gap-2">
+              <div><label class="block mb-1">血清 K (mEq/L)</label><input type="number" step="0.1" id="abg-alk-sk" class="w-full p-2 border rounded bg-slate-50"></div>
+              <div><label class="block mb-1">尿中 K (mEq/L)</label><input type="number" id="abg-alk-uk" class="w-full p-2 border rounded bg-slate-50"></div>
+              <div><label class="block mb-1">尿中 Cl (mEq/L)</label><input type="number" id="abg-alk-ucl" class="w-full p-2 border rounded bg-slate-50"></div>
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              <label class="font-bold text-slate-700">高血圧の併発:</label>
+              <label class="cursor-pointer"><input type="radio" name="abg-alk-ht" value="yes"> あり</label>
+              <label class="cursor-pointer"><input type="radio" name="abg-alk-ht" value="no" checked> なし</label>
             </div>
           </div>
-          <button onclick="calcABGStep2()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded shadow text-xs">詳細鑑別を実行</button>
+
+          <button onclick="calcABGStep2()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg shadow hover:bg-emerald-700 transition text-xs">詳細鑑別を実行</button>
         </div>
 
         <div id="abg-final-result" class="hidden bg-emerald-50 border border-emerald-200 p-4 rounded-xl text-xs space-y-2">
@@ -861,64 +923,126 @@
       reader.readAsText(file);
     }
 
-
     // ==================== 計算アシスト (ABG/FE/貧血) ロジック ====================
-    function switchCalcTab(tab) {
-      document.getElementById('tab-abg').classList.add('hidden');
-      document.getElementById('tab-renal').classList.add('hidden');
-      document.getElementById('tab-anemia').classList.add('hidden');
-      document.getElementById('tab-abg-btn').classList.remove('active');
-      document.getElementById('tab-renal-btn').classList.remove('active');
-      document.getElementById('tab-anemia-btn').classList.remove('active');
-
-      if(tab === 'abg') {
-        document.getElementById('tab-abg').classList.remove('hidden');
-        document.getElementById('tab-abg-btn').classList.add('active');
-      } else if(tab === 'renal') {
-        document.getElementById('tab-renal').classList.remove('hidden');
-        document.getElementById('tab-renal-btn').classList.add('active');
-      } else {
-        document.getElementById('tab-anemia').classList.remove('hidden');
-        document.getElementById('tab-anemia-btn').classList.add('active');
-      }
+    function updateFiO2FromFlow() {
+      const val = document.getElementById('abg-o2-flow').value;
+      let fio2 = 21;
+      if (val === '24') fio2 = 24;
+      else if (val === '28') fio2 = 28;
+      else if (val === '32') fio2 = 32;
+      else if (val === '36') fio2 = 36;
+      else if (val === '40' || val === '40_mask') fio2 = 40;
+      else if (val === '50_mask') fio2 = 50;
+      else if (val === '60_mask' || val === '60_res') fio2 = 60;
+      else if (val === '70_res') fio2 = 70;
+      else if (val === '80_res') fio2 = 80;
+      else if (val === '90_res') fio2 = 90;
+      else if (val === '95_res') fio2 = 95;
+      document.getElementById('abg-fio2').value = fio2;
     }
 
-    let abgState = { primary: '' };
+    let abgState = { primary: '', isAcidosis: false, isAlkalosis: false };
+
     function calcABG() {
       const ph = parseFloat(document.getElementById('abg-ph').value);
       const paco2 = parseFloat(document.getElementById('abg-paco2').value);
       const hco3 = parseFloat(document.getElementById('abg-hco3').value);
       const pao2 = parseFloat(document.getElementById('abg-pao2').value);
+      const fio2 = parseFloat(document.getElementById('abg-fio2').value) || 21;
       const chronicity = document.querySelector('input[name="abg-chronicity"]:checked').value;
 
-      if(!ph || !paco2 || !hco3) return alert('pH, PaCO₂, HCO₃⁻ を入力してください。');
+      if (!ph || !paco2 || !hco3) return alert('pH, PaCO₂, HCO₃⁻ を入力してください。');
 
-      let acidBaseText = ph < 7.38 ? 'アシデミア' : (ph > 7.42 ? 'アルカリミア' : '正常範囲 pH');
-      let primary = ph < 7.38 ? (hco3 < 22 ? '代謝性アシドーシス' : (paco2 > 42 ? '呼吸性アシドーシス' : '複合性障害'))
-                             : (hco3 > 26 ? '代謝性アルカローシス' : (paco2 < 38 ? '呼吸性アルカローシス' : '複合性障害'));
-      abgState.primary = primary;
+      // 酸素化評価
+      let pfRatio = pao2 ? (pao2 / (fio2 / 100)).toFixed(1) : null;
+      let paO2Ideal = 713 * (fio2 / 100) - (paco2 / 0.8);
+      let aado2 = pao2 ? (paO2Ideal - pao2).toFixed(1) : null;
 
+      let acidBaseText = ph < 7.38 ? 'アシデミア (pH < 7.38)' : (ph > 7.42 ? 'アルカリミア (pH > 7.42)' : '正常範囲 pH (7.38 - 7.42)');
+
+      // 主病態判定
+      let primary = '';
       let compText = '';
-      if (primary === '代謝性アシドーシス') {
-        const expectedPaCO2 = 40 - ((24 - hco3) * 1.3);
-        const diff = paco2 - expectedPaCO2;
-        compText = Math.abs(diff) <= 2 ? `代償適正 (予測 PaCO₂: ~${expectedPaCO2.toFixed(1)})` : (diff > 2 ? `PaCO₂高値 ➔ 呼吸性アシドーシス併発` : `PaCO₂低値 ➔ 呼吸性アルカローシス併発`);
-      } else if (primary === '代謝性アルカローシス') {
-        const expectedPaCO2 = 40 + ((hco3 - 24) * 0.7);
-        const diff = paco2 - expectedPaCO2;
-        compText = Math.abs(diff) <= 2 ? `代償適正 (予測 PaCO₂: ~${expectedPaCO2.toFixed(1)})` : (diff > 2 ? `PaCO₂高値 ➔ 呼吸性アシドーシス併発` : `PaCO₂低値 ➔ 呼吸性アルカローシス併発`);
+      let isResp = false;
+
+      if (ph < 7.38) {
+        if (hco3 < 22 && paco2 <= 42) {
+          primary = '代謝性アシドーシス';
+          // 代償評価: Winter's formula PaCO2 = 1.5 * HCO3 + 8 +/- 2
+          const expPaCO2 = 1.5 * hco3 + 8;
+          if (paco2 > expPaCO2 + 2) compText = `代償不足（PaCO₂高値 ➔ 呼吸性アシドーシスを重複合併）`;
+          else if (paco2 < expPaCO2 - 2) compText = `過剰代償（PaCO₂低値 ➔ 呼吸性アルカローシスを重複合併）`;
+          else compText = `適正代償範囲内 (予測 PaCO₂: ~${expPaCO2.toFixed(1)} mmHg)`;
+        } else if (paco2 > 42 && hco3 >= 22) {
+          primary = '呼吸性アシドーシス';
+          isResp = true;
+          // 代償評価
+          const expHCO3 = chronicity === 'acute' ? 24 + ((paco2 - 40) / 10 * 1) : 24 + ((paco2 - 40) / 10 * 3.5);
+          if (hco3 > expHCO3 + 3) compText = `代償範囲超過（HCO₃⁻高値 ➔ 代謝性アルカローシスを重複合併）`;
+          else if (hco3 < expHCO3 - 3) compText = `代償不十分（HCO₃⁻低値 ➔ 代謝性アシドーシスを重複合併）`;
+          else compText = `適正代償範囲内 (${chronicity === 'acute' ? '急性' : '慢性'} 予測 HCO₃⁻: ~${expHCO3.toFixed(1)} mEq/L)`;
+        } else {
+          primary = '複合性アシドーシス (代謝性＋呼吸性)';
+          compText = 'HCO₃⁻ 低下および PaCO₂ 上昇の併発';
+        }
+      } else if (ph > 7.42) {
+        if (hco3 > 26 && paco2 >= 38) {
+          primary = '代謝性アルカローシス';
+          // 代償評価: PaCO2 = 40 + 0.7 * (HCO3 - 24) +/- 2
+          const expPaCO2 = 40 + 0.7 * (hco3 - 24);
+          if (paco2 > expPaCO2 + 2) compText = `代償超過（PaCO₂高値 ➔ 呼吸性アシドーシスを重複合併）`;
+          else if (paco2 < expPaCO2 - 2) compText = `代償不足（PaCO₂低値 ➔ 呼吸性アルカローシスを重複合併）`;
+          else compText = `適正代償範囲内 (予測 PaCO₂: ~${expPaCO2.toFixed(1)} mmHg)`;
+        } else if (paco2 < 38 && hco3 <= 26) {
+          primary = '呼吸性アルカローシス';
+          isResp = true;
+          // 代償評価
+          const expHCO3 = chronicity === 'acute' ? 24 - ((40 - paco2) / 10 * 2) : 24 - ((40 - paco2) / 10 * 4.5);
+          if (hco3 < expHCO3 - 2) compText = `代償範囲超過（HCO₃⁻低値 ➔ 代謝性アシドーシスを重複合併）`;
+          else if (hco3 > expHCO3 + 2) compText = `代償不十分（HCO₃⁻高値 ➔ 代謝性アルカローシスを重複合併）`;
+          else compText = `適正代償範囲内 (${chronicity === 'acute' ? '急性' : '慢性'} 予測 HCO₃⁻: ~${expHCO3.toFixed(1)} mEq/L)`;
+        } else {
+          primary = '複合性アルカローシス (代謝性＋呼吸性)';
+          compText = 'HCO₃⁻ 上昇および PaCO₂ 低下の併発';
+        }
+      } else {
+        // pH 7.38 - 7.42 (正常範囲)
+        if (hco3 < 22) primary = '代謝性アシドーシス（代償完了または混合性障害）';
+        else if (hco3 > 26) primary = '代謝性アルカローシス（代償完了または混合性障害）';
+        else if (paco2 > 42) { primary = '呼吸性アシドーシス（代償完了）'; isResp = true; }
+        else if (paco2 < 38) { primary = '呼吸性アルカローシス（代償完了）'; isResp = true; }
+        else primary = '正常酸塩基平衡';
       }
 
-      document.getElementById('abg-primary-text').innerHTML = `${acidBaseText} <span class="text-xs text-slate-600">(${primary})</span>`;
-      document.getElementById('abg-comp-text').innerHTML = `<strong>代償評価:</strong> ${compText}`;
-      document.getElementById('abg-aado2-text').innerHTML = pao2 ? `A-aDO₂: ${((150 - (paco2 / 0.8)) - pao2).toFixed(1)} mmHg` : 'PaO₂未入力';
+      abgState.primary = primary;
+
+      document.getElementById('abg-primary-text').innerHTML = `${acidBaseText} <br><span class="text-sm text-blue-900 font-bold">主病態: ${primary}</span>`;
+      document.getElementById('abg-comp-text').innerHTML = `<strong>代償評価:</strong> ${compText || 'なし'}`;
+      
+      let oxyHtml = `<strong>酸素化指標 (FiO₂ ${fio2}%):</strong><br>`;
+      oxyHtml += pao2 ? `・P/F 比: <strong class="${pfRatio < 300 ? 'text-red-600' : ''}">${pfRatio}</strong> (300以下はARDS/ALI基準)<br>` : '・PaO₂ 未入力<br>';
+      oxyHtml += pao2 ? `・A-aDO₂: <strong>${aado2} mmHg</strong>` : '';
+      document.getElementById('abg-oxygenation-text').innerHTML = oxyHtml;
+
       document.getElementById('abg-step1-result').classList.remove('hidden');
 
+      // 呼吸性の場合はここで完了
+      if (isResp || primary === '正常酸塩基平衡') {
+        document.getElementById('abg-step2-sec').classList.add('hidden');
+        document.getElementById('abg-final-result').classList.add('hidden');
+        return;
+      }
+
+      // 代謝性の場合はStep2を表示
       document.getElementById('abg-step2-sec').classList.remove('hidden');
       document.getElementById('form-met-acid').classList.add('hidden');
       document.getElementById('form-met-alk').classList.add('hidden');
-      if (primary === '代謝性アシドーシス') document.getElementById('form-met-acid').classList.remove('hidden');
-      if (primary === '代謝性アルカローシス') document.getElementById('form-met-alk').classList.remove('hidden');
+
+      if (primary.includes('代謝性アシドーシス') || hco3 < 22) {
+        document.getElementById('form-met-acid').classList.remove('hidden');
+      } else if (primary.includes('代謝性アルカローシス') || hco3 > 26) {
+        document.getElementById('form-met-alk').classList.remove('hidden');
+      }
     }
 
     function calcABGStep2() {
@@ -926,22 +1050,126 @@
       const hco3 = parseFloat(document.getElementById('abg-hco3').value);
       let outHtml = '';
 
-      if (primary === '代謝性アシドーシス') {
+      if (primary.includes('代謝性アシドーシス') || hco3 < 22) {
         const na = parseFloat(document.getElementById('abg-na').value);
         const cl = parseFloat(document.getElementById('abg-cl').value);
         const alb = parseFloat(document.getElementById('abg-alb').value) || 4.0;
-        if(!na || !cl) return alert('Na, Clを入力してください。');
+
+        if (!na || !cl) return alert('血清 Na および Cl を入力してください。');
 
         const ag = na - (cl + hco3);
         const corrAG = ag + 2.5 * (4.0 - alb);
-        outHtml += `<p>・AG: ${ag.toFixed(1)} (補正AG: ${corrAG.toFixed(1)})</p>`;
-        outHtml += corrAG > 12 ? `<p class="font-bold text-red-600">➔ AG開大性 代謝性アシドーシス</p>` : `<p class="font-bold text-blue-600">➔ AG非開大性 (高Cl性)</p>`;
-      } else if (primary === '代謝性アルカローシス') {
-        const ucl = parseFloat(document.getElementById('abg-alk-ucl').value);
-        if (ucl < 10) outHtml += `・尿Cl &lt; 10 ➔ 低Cl性 (嘔吐等)`;
-        else if (ucl > 20) outHtml += `・尿Cl &gt; 20 ➔ R-A-A系亢進疑い`;
+
+        outHtml += `<div class="p-2 bg-white rounded border space-y-1 mb-2">`;
+        outHtml += `<p class="font-bold text-slate-800">・測定 AG: ${ag.toFixed(1)} mEq/L (補正 AG: ${corrAG.toFixed(1)} mEq/L)</p>`;
+
+        if (corrAG < 0) {
+          outHtml += `<p class="font-bold text-purple-700">➔ AG マイナス (陰性)</p>`;
+          outHtml += `<p class="text-xs text-slate-600 mt-1"><strong>鑑別:</strong> 偽性高Cl血症 (ブロム/サリチル酸/ヨウ素など)、測定不能な陽イオン増加 (高Ca/Mg/K血症，γグロブリン増加，リチウム中毒)、陰イオン低下 (低Alb血症)、偽性低Na血症 (高TG血症，高蛋白，高血糖など)</p>`;
+        } else if (corrAG > 12) {
+          outHtml += `<p class="font-bold text-red-600">➔ AG 開大性 代謝性アシドーシス (補正AG > 12)</p>`;
+          outHtml += `<p class="text-xs text-slate-700 mt-1"><strong>基本鑑別:</strong> 乳酸アシドーシス、ケトアシドーシス、アルコール性ケトアシドーシス、急性腎障害、慢性腎障害、メタノール・エチレングリコール・プロピレングリコール中毒、サリチル酸中毒</p>`;
+
+          // △AG 計算
+          const deltaAG = corrAG - 12;
+          if (hco3 + deltaAG > 24) {
+            outHtml += `<p class="text-xs font-bold text-amber-700 bg-amber-50 p-1.5 rounded border border-amber-200 mt-1">⚠️ HCO₃⁻ + △AG = ${(hco3 + deltaAG).toFixed(1)} > 24 ➔ 代謝性アルカローシスも合併しています</p>`;
+          }
+
+          // 乳酸・ケトン補正
+          const lac = parseFloat(document.getElementById('abg-lac').value) || 0;
+          const ket = parseFloat(document.getElementById('abg-ket').value) || 0;
+
+          if (lac > 0 || ket > 0) {
+            const corrAGNonLacKet = corrAG - lac - (ket / 1000);
+            outHtml += `<p class="text-xs text-slate-600 mt-1">・乳酸/ケトン補正後 AG: <strong>${corrAGNonLacKet.toFixed(1)}</strong></p>`;
+            if (corrAGNonLacKet > 12) {
+              outHtml += `<p class="text-xs font-bold text-rose-700 bg-rose-50 p-1 rounded">➔ 乳酸・ケトン体以外の揮発性酸の関連可能性あり</p>`;
+            }
+          }
+
+          // 浸透圧ギャップ計算
+          const glu = parseFloat(document.getElementById('abg-glu').value);
+          const bun = parseFloat(document.getElementById('abg-bun').value);
+          const measOsm = parseFloat(document.getElementById('abg-meas-osm').value);
+
+          if (glu && bun && measOsm) {
+            const calcOsm = (2 * na) + (glu / 18) + (bun / 2.8);
+            const osmGap = measOsm - calcOsm;
+            const ethEst = (osmGap * 4.6).toFixed(1);
+
+            outHtml += `<div class="mt-2 pt-2 border-t text-xs space-y-1">`;
+            outHtml += `<p>・計算浸透圧: ${calcOsm.toFixed(1)} mOsm/kg | 浸透圧ギャップ: <strong>${osmGap.toFixed(1)}</strong></p>`;
+            if (osmGap >= 20) {
+              outHtml += `<p class="font-bold text-red-700">➔ 浸透圧ギャップ 20 以上: 【鑑別：アルコール中毒の可能性】</p>`;
+              outHtml += `<p class="text-slate-700">血中エタノール推定値: <strong>~${ethEst} mg/dL</strong></p>`;
+            } else if (osmGap >= 10) {
+              outHtml += `<p class="font-bold text-amber-700">➔ 浸透圧ギャップ 10 以上: 【鑑別：アルコール中毒、サリチル酸中毒の可能性】</p>`;
+              outHtml += `<p class="text-slate-700">血中エタノール推定値: <strong>~${ethEst} mg/dL</strong></p>`;
+            } else {
+              outHtml += `<p class="text-slate-600">➔ 浸透圧ギャップ 10 未満（有意な浸透圧ギャップなし）</p>`;
+            }
+            outHtml += `</div>`;
+          }
+        } else {
+          // AG 非開大性 (高Cl性)
+          outHtml += `<p class="font-bold text-blue-600">➔ AG 非開大性 (高Cl性) 代謝性アシドーシス (補正AG ≤ 12)</p>`;
+          
+          const uNa = parseFloat(document.getElementById('abg-una').value);
+          const uK = parseFloat(document.getElementById('abg-uk').value);
+          const uCl = parseFloat(document.getElementById('abg-ucl').value);
+
+          if (uNa !== undefined && uK !== undefined && uCl !== undefined && !isNaN(uNa) && !isNaN(uK) && !isNaN(uCl)) {
+            const uAG = (uNa + uK) - uCl;
+            outHtml += `<p class="text-xs font-bold mt-1">・尿中 AG: ${uAG.toFixed(1)} mEq/L (${uAG < 0 ? '陰性' : '陽性'})</p>`;
+
+            if (uAG < 0) {
+              outHtml += `<p class="text-xs text-blue-800 bg-blue-50 p-2 rounded border border-blue-100 mt-1"><strong>鑑別 (尿中AG 陰性):</strong> 下痢、NaCl補液、2型RTA(低P血症、高尿酸血症、腎性糖尿など)、糖尿病性ケトアシドーシスの改善期、慢性呼吸性アルカローシスの改善期</p>`;
+            } else {
+              outHtml += `<p class="text-xs text-amber-800 bg-amber-50 p-2 rounded border border-amber-100 mt-1"><strong>鑑別 (尿中AG 陽性):</strong> ケトアシドーシスの増悪期、慢性呼吸性アシドーシスの改善期、遠位尿細管性アシドーシス</p>`;
+
+              const sK = parseFloat(document.getElementById('abg-sk').value);
+              const upH = parseFloat(document.getElementById('abg-uph').value);
+
+              if (sK && upH) {
+                if (sK < 3.5 && upH > 5.5) {
+                  outHtml += `<p class="text-xs font-bold text-red-700 mt-1">➔ （K低下かつ尿pH>5.5） 1型 RTA (遠位型)</p>`;
+                } else if (sK > 5.0 && upH > 5.5) {
+                  outHtml += `<p class="text-xs font-bold text-red-700 mt-1">➔ （K上昇かつ尿pH>5.5） 4型 RTA (ACE阻害薬、スピロノラクトン、慢性間質性腎炎、糖尿病性腎炎など)</p>`;
+                }
+              }
+            }
+          } else {
+            outHtml += `<p class="text-xs text-slate-500 mt-1">※ 尿中 Na, K, Cl を入力すると尿中AG鑑別を実行できます。</p>`;
+          }
+        }
+        outHtml += `</div>`;
+      } else if (primary.includes('代謝性アルカローシス') || hco3 > 26) {
+        const uCl = parseFloat(document.getElementById('abg-alk-ucl').value);
+        const sK = parseFloat(document.getElementById('abg-alk-sk').value);
+        const uK = parseFloat(document.getElementById('abg-alk-uk').value);
+        const hasHT = document.querySelector('input[name="abg-alk-ht"]:checked').value === 'yes';
+
+        outHtml += `<div class="p-2 bg-white rounded border space-y-1 mb-2">`;
+        if (uCl < 20) {
+          outHtml += `<p class="font-bold text-blue-700">・尿中 Cl < 10-25 mEq/L</p>`;
+          outHtml += `<p class="text-xs text-slate-700"><strong>鑑別:</strong> 嘔吐、胃管、下痢（腎臓以外でCl喪失あり）</p>`;
+        } else if (uCl >= 20) {
+          outHtml += `<p class="font-bold text-amber-700">・尿中 Cl > 20-40 mEq/L</p>`;
+          outHtml += `<p class="text-xs text-slate-700"><strong>鑑別:</strong> RAA系の亢進、ステロイド、Liddle症候群、Bartter症候群、サイアザイド利尿薬、低Mg血症を考慮</p>`;
+
+          if (uK > 30 && hasHT && sK < 3.5) {
+            outHtml += `<p class="text-xs font-bold text-red-700 bg-red-50 p-1.5 rounded border border-red-200 mt-1">詳しい鑑別: ステロイド過剰、鉱質コルチコイド過剰</p>`;
+          } else if (uK > 30 && !hasHT) {
+            outHtml += `<p class="text-xs font-bold text-purple-700 bg-purple-50 p-1.5 rounded border border-purple-200 mt-1">詳しい鑑別: Gitelman症候群(尿中Ca低値)、Bartter症候群(尿中Ca高値)</p>`;
+          }
+        } else {
+          outHtml += `<p class="text-xs text-slate-500">※ 尿中 Cl を入力すると詳細な鑑別が表示されます。</p>`;
+        }
+        outHtml += `</div>`;
       }
-      document.getElementById('abg-final-text').innerHTML = outHtml;
+
+      document.getElementById('abg-final-text').innerHTML = outHtml || '詳細所見を入力してください。';
       document.getElementById('abg-final-result').classList.remove('hidden');
     }
 
