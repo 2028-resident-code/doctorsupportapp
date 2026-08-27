@@ -469,7 +469,11 @@
           <div id="ane-form-rpi-low" class="hidden space-y-3 text-xs">
             <p class="font-bold text-blue-600">■ RPI正常〜低下パターン (RPI < 2.0)</p>
             
-            <div id="ane-iron-panel" class="space-y-2">
+            <div id="ane-mcv-100-110-msg" class="hidden bg-purple-50 p-2.5 rounded border border-purple-200 text-purple-900 font-bold">
+              鑑別：甲状腺機能低下症、アルコール、MDSなど
+            </div>
+
+            <div id="ane-iron-panel" class="hidden space-y-2">
               <p class="font-bold text-slate-700">・鉄代謝パネル</p>
               <div class="grid grid-cols-4 gap-2">
                 <div><label>Fe (μg/dL)</label><input type="number" id="ane-fe" class="w-full p-1.5 border rounded"></div>
@@ -480,7 +484,7 @@
             </div>
 
             <div id="ane-mcv-middle-panel" class="hidden space-y-2 border-t pt-2">
-              <p class="font-bold text-slate-700">・MCV 80-100 追加評価項目</p>
+              <p class="font-bold text-slate-700">・併発・骨髄評価項目</p>
               <div class="grid grid-cols-2 gap-2">
                 <div>
                   <label class="block font-medium">汎血球減少</label>
@@ -499,16 +503,26 @@
               </div>
             </div>
 
-            <div id="ane-weight-panel" class="hidden space-y-1 border-t pt-2">
-              <label class="block font-bold text-amber-700">・鉄剤補正計算用 体重 (kg)</label>
-              <input type="number" id="ane-weight" placeholder="例: 50" class="w-full p-1.5 border rounded bg-amber-50">
-            </div>
-
-            <button onclick="calcAnemiaRpiLow()" class="w-full bg-blue-600 text-white font-bold py-1.5 rounded text-xs cursor-pointer hover:bg-blue-700">生産低下系 鑑別判定</button>
+            <button id="ane-rpi-low-btn" onclick="calcAnemiaRpiLow()" class="w-full bg-blue-600 text-white font-bold py-1.5 rounded text-xs cursor-pointer hover:bg-blue-700">生産低下系 鑑別判定</button>
             <div id="ane-rpi-low-result" class="hidden bg-blue-50 p-3 rounded border border-blue-200 space-y-1"></div>
           </div>
 
         </div>
+
+        <!-- 鉄剤相当量補正計算共通パネル -->
+        <div id="ane-dose-calc-sec" class="hidden bg-amber-50 border border-amber-300 p-4 rounded-xl space-y-3 text-xs">
+          <h3 class="font-bold text-amber-900 border-b border-amber-200 pb-1">💊 鉄欠乏性貧血 鉄剤相当量補正計算</h3>
+          <div class="space-y-1">
+            <label class="block font-bold text-amber-800">体重 (kg) を入力してください:</label>
+            <input type="number" id="ane-weight" placeholder="例: 50" oninput="calculateIronDose()" class="w-full p-2 border rounded bg-white">
+          </div>
+          <div id="ane-dose-result" class="p-2.5 bg-white rounded border border-amber-200 space-y-1">
+            <div class="font-extrabold text-amber-900 text-sm">参考：必要総鉄剤相当量 <span id="res-iron-dose">--</span> mg</div>
+            <p class="text-amber-800 text-[11px]">※計算式: 2.2 × (16 - Hb) + 10 × 体重</p>
+            <p class="text-red-700 font-bold text-[11px] pt-1">鉄剤投与でも改善しない場合、IRIDA (鉄不応性鉄欠乏性貧血) も検討ください</p>
+          </div>
+        </div>
+
       </div>
 
     </section>
@@ -1062,7 +1076,7 @@
         step2Sec.classList.remove('hidden');
         document.getElementById('form-met-alk').classList.remove('hidden');
       } else {
-        step2Sec.classList.add('hidden'); // 呼吸性の場合はここで完結
+        step2Sec.classList.add('hidden');
       }
     }
 
@@ -1116,8 +1130,7 @@
 
       let html = '';
 
-      // 1. 乳酸・ケトン体補正判定
-      const lacAG = lac > 10 ? lac / 9.0 : lac; // mg/dLならmmol/L換算
+      const lacAG = lac > 10 ? lac / 9.0 : lac;
       const ketAG = ket / 1000.0;
       const unmeasuredAG = abgGlobal.corrAG - lacAG - ketAG;
 
@@ -1127,7 +1140,6 @@
         html += `<p>・乳酸/ケトン体でAG開大の大部分が説明可能です。</p>`;
       }
 
-      // 2. 浸透圧ギャップ判定
       if (na && glu && bun && posm) {
         const calcOsm = 2 * na + (glu / 18.0) + (bun / 2.8);
         const osmGap = posm - calcOsm;
@@ -1269,8 +1281,12 @@
 
       let html = `<strong>RPI判定:</strong> ${rpi >= 2.0 ? '生産亢進・破壊/出血系 (RPI ≥ 2.0)' : '生産低下系 (RPI < 2.0)'}<br>`;
       let earlyDiff = [];
+      let isMicroIDA = false;
 
-      if (mcv < 70) earlyDiff.push("鑑別：鉄欠乏性貧血<br>※フェリチン&lt;20であれば確定診断です");
+      if (mcv < 70) {
+        earlyDiff.push("鑑別：鉄欠乏性貧血<br>※フェリチン&lt;20であれば確定診断です");
+        isMicroIDA = true;
+      }
       if (mcv > 125) earlyDiff.push("鑑別：ビタミンB12欠乏、葉酸欠乏");
       if (mentzer && mentzer < 13) earlyDiff.push("鑑別：サラセミア");
 
@@ -1281,13 +1297,24 @@
       document.getElementById('ane-primary-diag').innerHTML = html;
       document.getElementById('ane-step1-result').classList.remove('hidden');
 
-      // 早期終了判定（MCV<70 or >125 or Mentzer<13 かつ RPI非上昇）
-      const step2Sec = document.getElementById('ane-step2-sec');
-      if (earlyDiff.length > 0 && !anemiaGlobal.isRpiHigh) {
-        step2Sec.classList.add('hidden'); // アルゴリズム終了
+      // 鉄計算パネルのクリア
+      document.getElementById('ane-dose-calc-sec').classList.add('hidden');
+
+      // MCV < 70 かつ RPI非上昇の場合はStep2スキップで鉄剤計算へダイレクト移動
+      if (isMicroIDA && !anemiaGlobal.isRpiHigh) {
+        document.getElementById('ane-step2-sec').classList.add('hidden');
+        showIronDoseCalculator();
         return;
       }
 
+      // 早期分岐に該当かつRPI非上昇のその他（MCV>125, Mentzer<13）は即時終了
+      if (earlyDiff.length > 0 && !anemiaGlobal.isRpiHigh) {
+        document.getElementById('ane-step2-sec').classList.add('hidden');
+        return;
+      }
+
+      // Step2を展開
+      const step2Sec = document.getElementById('ane-step2-sec');
       step2Sec.classList.remove('hidden');
       document.getElementById('ane-form-rpi-high').classList.add('hidden');
       document.getElementById('ane-form-rpi-low').classList.add('hidden');
@@ -1296,9 +1323,39 @@
         document.getElementById('ane-form-rpi-high').classList.remove('hidden');
       } else {
         document.getElementById('ane-form-rpi-low').classList.remove('hidden');
-        const mcvMiddle = document.getElementById('ane-mcv-middle-panel');
-        if (mcv >= 80 && mcv <= 100) mcvMiddle.classList.remove('hidden');
-        else mcvMiddle.classList.add('hidden');
+        setupRpiLowForm(mcv);
+      }
+    }
+
+    function setupRpiLowForm(mcv) {
+      const msg100 = document.getElementById('ane-mcv-100-110-msg');
+      const ironPanel = document.getElementById('ane-iron-panel');
+      const middlePanel = document.getElementById('ane-mcv-middle-panel');
+      const btn = document.getElementById('ane-rpi-low-btn');
+      const resEl = document.getElementById('ane-rpi-low-result');
+
+      msg100.classList.add('hidden');
+      ironPanel.classList.add('hidden');
+      middlePanel.classList.add('hidden');
+      btn.classList.remove('hidden');
+      resEl.classList.add('hidden');
+
+      if (mcv >= 70 && mcv < 80) {
+        ironPanel.classList.remove('hidden');
+      } 
+      else if (mcv >= 80 && mcv <= 100) {
+        ironPanel.classList.remove('hidden');
+        middlePanel.classList.remove('hidden');
+      } 
+      else if (mcv > 100 && mcv <= 110) {
+        msg100.classList.remove('hidden');
+        ironPanel.classList.remove('hidden');
+        middlePanel.classList.remove('hidden');
+      } 
+      else if (mcv > 110 && mcv <= 125) {
+        btn.classList.add('hidden');
+        resEl.classList.remove('hidden');
+        resEl.innerHTML = `<strong>鑑別：ビタミンB12欠乏、葉酸欠乏、甲状腺機能低下症、アルコール、MDSなど</strong><br>※ビタミンB12&lt;200 pg/mLもしくは葉酸&lt;3 ng/mL、またホモシステイン上昇があればビタミンB12欠乏、葉酸欠乏を疑います`;
       }
     }
 
@@ -1327,7 +1384,6 @@
       const ferritin = parseFloat(document.getElementById('ane-ferritin').value);
       const pancy = document.getElementById('ane-pancytopenia').value;
       const renal = document.getElementById('ane-renal-dys').value;
-      const weight = parseFloat(document.getElementById('ane-weight').value);
 
       let totalTibc = tibc || (fe && uibc ? fe + uibc : null);
       let tsat = (fe && totalTibc) ? (fe / totalTibc) * 100 : null;
@@ -1344,7 +1400,7 @@
         }
         if (ferritin > 100) html += `<br>※鉄欠乏は除外できます`;
       } 
-      else if (mcv >= 80 && mcv <= 100) {
+      else if (mcv >= 80 && mcv <= 110) {
         if (pancy === 'yes') {
           html += `<strong>鑑別：再生不良性貧血、MDSなど</strong>`;
         } else {
@@ -1361,38 +1417,37 @@
           if (subDiffs.length > 0) {
             html += `<strong>鑑別：${subDiffs.join(' と ')}</strong>`;
           } else {
-            html += `正球性貧血：その他の全身性疾患・骨髄疾患の精査を考慮`;
+            html += `正球性/大球性パターン：その他の骨髄・代謝性の精査を考慮`;
           }
         }
         if (ferritin > 100) html += `<br>※鉄欠乏は除外できます`;
-      } 
-      else if (mcv > 100 && mcv <= 110) {
-        html += `<strong>鑑別：甲状腺機能低下症、アルコール、MDSなど</strong>`;
-      } 
-      else if (mcv > 110 && mcv <= 125) {
-        html += `<strong>鑑別：ビタミンB12欠乏、葉酸欠乏、甲状腺機能低下症、アルコール、MDSなど</strong><br>※ビタミンB12&lt;200 pg/mLもしくは葉酸&lt;3 ng/mL、またホモシステイン上昇があればビタミンB12欠乏、葉酸欠乏を疑います`;
-      }
-
-      // 鉄欠乏性貧血算出ロジック
-      const weightPanel = document.getElementById('ane-weight-panel');
-      if (isIDA) {
-        weightPanel.classList.remove('hidden');
-        if (weight) {
-          const dose = 2.2 * (16 - anemiaGlobal.hb) * weight + 10;
-          html += `<div class="bg-amber-100 p-2 rounded mt-2 border border-amber-300 text-amber-900">
-            <strong>参考：必要総鉄剤相当量 ${dose.toFixed(0)} mg</strong><br>
-            ※鉄剤投与でも改善しない場合、IRIDA (鉄不応性鉄欠乏性貧血) も検討ください
-          </div>`;
-        } else {
-          html += `<div class="text-amber-800 mt-1">※体重を入力すると総必要鉄剤相当量が自動計算されます。<br>※鉄剤投与でも改善しない場合、IRIDAも検討ください</div>`;
-        }
-      } else {
-        weightPanel.classList.add('hidden');
       }
 
       const resEl = document.getElementById('ane-rpi-low-result');
-      resEl.innerHTML = html || '各種数値を入力してください。';
+      resEl.innerHTML = html || '数値・項目を入力してください。';
       resEl.classList.remove('hidden');
+
+      if (isIDA) {
+        showIronDoseCalculator();
+      } else {
+        document.getElementById('ane-dose-calc-sec').classList.add('hidden');
+      }
+    }
+
+    function showIronDoseCalculator() {
+      document.getElementById('ane-dose-calc-sec').classList.remove('hidden');
+      calculateIronDose();
+    }
+
+    function calculateIronDose() {
+      const weight = parseFloat(document.getElementById('ane-weight').value);
+      const resEl = document.getElementById('res-iron-dose');
+      if (weight && anemiaGlobal.hb) {
+        const dose = 2.2 * (16 - anemiaGlobal.hb) + 10 * weight;
+        resEl.innerText = dose.toFixed(0);
+      } else {
+        resEl.innerText = '--';
+      }
     }
   </script>
 </body>
