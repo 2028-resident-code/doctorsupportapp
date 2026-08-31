@@ -34,7 +34,17 @@
         <p class="text-xs text-slate-500">診療サポートツール・症例管理システム</p>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+        <!-- EPOCカード -->
+        <button onclick="openEpoc()" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-purple-500 hover:shadow-md transition text-left space-y-3 group cursor-pointer">
+          <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+            📂
+          </div>
+          <div>
+            <h3 class="font-bold text-lg text-slate-800">EPOC 症例登録</h3>
+          </div>
+        </button>
+
         <!-- J-OSLERカード -->
         <button onclick="openJosler()" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-500 hover:shadow-md transition text-left space-y-3 group cursor-pointer">
           <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
@@ -42,7 +52,6 @@
           </div>
           <div>
             <h3 class="font-bold text-lg text-slate-800">J-OSLER 症例登録</h3>
-            <p class="text-xs text-slate-500 mt-1">120症例要件・疾患群・病名別登録と進捗管理（端末内保存）</p>
           </div>
         </button>
 
@@ -53,14 +62,130 @@
           </div>
           <div>
             <h3 class="font-bold text-lg text-slate-800">計算・鑑別アシスト</h3>
-            <p class="text-xs text-slate-500 mt-1">動脈血液ガス (ABG)・腎機能 (FE)・貧血アセスメントツール</p>
           </div>
         </button>
       </div>
     </section>
 
 
-    <!-- ==================== A. J-OSLER 症例登録エリア ==================== -->
+    <!-- ==================== A. EPOC 症例登録エリア ==================== -->
+    <section id="sec-epoc" class="hidden space-y-6">
+
+      <!-- EPOC 全体進捗サマリーカード -->
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h2 class="text-sm font-bold text-slate-700">📊 全体進捗ステータス (EPOC)</h2>
+          <div class="flex gap-2">
+            <button onclick="exportEpocData()" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded border cursor-pointer">保存データ出力</button>
+            <button onclick="importEpocData()" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded border cursor-pointer">復元</button>
+            <input type="file" id="epoc-import-file" class="hidden" accept=".json" onchange="handleEpocFileImport(event)">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-center">
+          <div class="p-3 bg-purple-50 border border-purple-100 rounded-lg">
+            <div class="text-[11px] text-purple-600 font-bold">病歴要約提出数</div>
+            <div id="epoc-summary-reports" class="text-lg font-extrabold text-purple-900">0 / 56</div>
+          </div>
+          <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+            <div class="text-[11px] text-indigo-600 font-bold">外科症例要件</div>
+            <div id="epoc-summary-surg" class="text-lg font-extrabold text-indigo-900">未</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EPOC 階層1: 56分野一覧 -->
+      <div id="epoc-view-fields" class="space-y-3">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">分野を選択</h3>
+        <div id="epoc-fields-list" class="space-y-2"></div>
+      </div>
+
+      <!-- EPOC 階層2: 症例登録・一覧画面 -->
+      <div id="epoc-view-cases" class="hidden space-y-4">
+        <button onclick="navToEpocFields()" class="text-xs text-purple-600 font-bold flex items-center gap-1 cursor-pointer">← EPOC分野一覧に戻る</button>
+        
+        <div class="bg-purple-50 border border-purple-200 p-4 rounded-xl space-y-1">
+          <div id="epoc-current-field-title" class="font-extrabold text-purple-900 text-base"></div>
+          <div class="text-xs text-purple-700">この分野の症例管理および病歴要約の設定を行えます。</div>
+        </div>
+
+        <!-- 登録済み症例リスト -->
+        <div id="epoc-cases-list" class="space-y-3"></div>
+
+        <!-- 新規登録フォーム -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-3 shadow-sm">
+          <h4 class="text-sm font-bold text-slate-700 border-b pb-2">➕ 症例を追加登録</h4>
+          
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="block mb-1 font-medium">年齢</label>
+              <select id="epoc-case-age" class="w-full p-2 border rounded bg-slate-50">
+                <option>10代</option><option>20代</option><option>30代</option><option>40代</option>
+                <option>50代</option><option>60代</option><option>70代</option><option>80代</option><option>90代以上</option>
+              </select>
+            </div>
+            <div>
+              <label class="block mb-1 font-medium">名前 (イニシャル/仮名)</label>
+              <input type="text" id="epoc-case-name" placeholder="例: T.K." class="w-full p-2 border rounded bg-slate-50">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="block mb-1 font-medium">患者ID</label>
+              <input type="text" id="epoc-case-id" placeholder="123456" class="w-full p-2 border rounded bg-slate-50">
+            </div>
+            <div>
+              <label class="block mb-1 font-medium">診療科</label>
+              <input type="text" id="epoc-case-dept" placeholder="例: 消化器内科" class="w-full p-2 border rounded bg-slate-50">
+            </div>
+          </div>
+
+          <div class="text-xs">
+            <label class="block mb-1 font-medium">外科症例の有無</label>
+            <select id="epoc-case-surg" class="w-full p-2 border rounded bg-slate-50">
+              <option value="no">なし (内科・その他)</option>
+              <option value="yes">あり (外科症例)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="block mb-1 font-medium">受け持ち開始日</label>
+              <input type="date" id="epoc-case-start" class="w-full p-2 border rounded bg-slate-50">
+            </div>
+            <div>
+              <label class="block mb-1 font-medium">受け持ち終了日</label>
+              <input type="date" id="epoc-case-end" class="w-full p-2 border rounded bg-slate-50">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="block mb-1 font-medium">入院日</label>
+              <input type="date" id="epoc-case-adm" class="w-full p-2 border rounded bg-slate-50">
+            </div>
+            <div>
+              <label class="block mb-1 font-medium">退院日</label>
+              <input type="date" id="epoc-case-dis" class="w-full p-2 border rounded bg-slate-50">
+            </div>
+          </div>
+
+          <div class="text-xs">
+            <label class="block mb-1 font-medium">症例概略</label>
+            <textarea id="epoc-case-summary" rows="2" placeholder="主訴、診断の経緯、治療概要など" class="w-full p-2 border rounded bg-slate-50"></textarea>
+          </div>
+
+          <button onclick="saveEpocCase()" class="w-full bg-purple-600 text-white font-bold py-2.5 rounded-lg shadow hover:bg-purple-700 transition text-xs cursor-pointer">
+            この症例を登録する
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ==================== B. J-OSLER 症例登録エリア ==================== -->
     <section id="sec-josler" class="hidden space-y-6">
 
       <!-- 全体進捗サマリーカード -->
@@ -254,7 +379,7 @@
     </section>
 
 
-    <!-- ==================== B. 計算・鑑別アシストエリア ==================== -->
+    <!-- ==================== C. 計算・鑑別アシストエリア ==================== -->
     <section id="sec-calc" class="hidden space-y-6">
       <!-- タブナビゲーション -->
       <div class="flex bg-white border-b border-slate-200 text-xs sm:text-sm rounded-t-xl overflow-hidden">
@@ -530,7 +655,248 @@
   </main>
 
   <script>
-    // ==================== J-OSLER データ構造定義 (分野 ➔ 疾患群 ➔ 病名) ====================
+    // ==================== EPOC 56分野定義 ====================
+    const EPOC_FIELDS = [
+      "ショック", "体重減少・るい痩", "発疹", "黄疸", "発熱", "もの忘れ", "頭痛", "めまい", 
+      "意識障害・失神", "けいれん発作", "視力障害", "胸痛", "心停止", "呼吸困難", "吐血・喀血", 
+      "下血・血便", "嘔気・嘔吐", "腹痛", "便通異常（下痢・便秘）", "熱傷・外傷", "腰・背部痛", 
+      "関節痛", "運動麻痺・筋力低下", "排尿障害（尿失禁・排尿困難）", "興奮・せん妄", "抑うつ", 
+      "成長・発達の障害", "妊娠・出産", "終末期の徴候", "脳血管障害", "認知症", "急性冠症候群", 
+      "心不全", "大動脈瘤", "高血圧", "肺癌", "肺炎", "急性上気道炎", "気管支喘息", "COPD", 
+      "急性胃腸炎", "胃癌", "消化性潰瘍", "肝炎・肝硬変", "胆石症", "大腸癌", "腎盂腎炎", 
+      "尿路結石", "腎不全", "高エネルギー外傷・骨折", "糖尿病", "脂質異常症", "気分障害", 
+      "統合失調症", "依存症（ニコチン・アルコール・薬物・病的賭博）", "CPC"
+    ];
+
+    // LocalStorage状態管理 (EPOC & J-OSLER)
+    let storedEpocCases = JSON.parse(localStorage.getItem('epoc_cases_data') || '[]');
+    let currentEpocField = null;
+
+    let storedCases = JSON.parse(localStorage.getItem('josler_cases_data') || '[]');
+    let currentFieldId = null;
+    let currentGroupName = null;
+    let currentDiseaseName = null;
+
+    // --- 共通 画面遷移制御 ---
+    function showMainSelection() {
+      document.getElementById('sec-main-selection').classList.remove('hidden');
+      document.getElementById('sec-epoc').classList.add('hidden');
+      document.getElementById('sec-josler').classList.add('hidden');
+      document.getElementById('sec-calc').classList.add('hidden');
+      document.getElementById('btn-to-main').classList.add('hidden');
+      document.getElementById('header-title').innerText = 'Doctor Support App';
+    }
+
+    function openEpoc() {
+      document.getElementById('sec-main-selection').classList.add('hidden');
+      document.getElementById('sec-epoc').classList.remove('hidden');
+      document.getElementById('sec-josler').classList.add('hidden');
+      document.getElementById('sec-calc').classList.add('hidden');
+      document.getElementById('btn-to-main').classList.remove('hidden');
+      document.getElementById('header-title').innerText = 'EPOC 症例登録';
+      navToEpocFields();
+      updateEpocSummary();
+    }
+
+    function openJosler() {
+      document.getElementById('sec-main-selection').classList.add('hidden');
+      document.getElementById('sec-epoc').classList.add('hidden');
+      document.getElementById('sec-josler').classList.remove('hidden');
+      document.getElementById('sec-calc').classList.add('hidden');
+      document.getElementById('btn-to-main').classList.remove('hidden');
+      document.getElementById('header-title').innerText = 'J-OSLER 症例登録';
+      navToFields();
+      updateJoslerSummary();
+    }
+
+    function openCalc() {
+      document.getElementById('sec-main-selection').classList.add('hidden');
+      document.getElementById('sec-epoc').classList.add('hidden');
+      document.getElementById('sec-josler').classList.add('hidden');
+      document.getElementById('sec-calc').classList.remove('hidden');
+      document.getElementById('btn-to-main').classList.remove('hidden');
+      document.getElementById('header-title').innerText = '計算・鑑別アシスト';
+      switchCalcTab('abg');
+    }
+
+    // ==================== EPOC 制御ロジック ====================
+    function navToEpocFields() {
+      document.getElementById('epoc-view-fields').classList.remove('hidden');
+      document.getElementById('epoc-view-cases').classList.add('hidden');
+      renderEpocFieldsList();
+    }
+
+    function navToEpocCases(fieldName) {
+      currentEpocField = fieldName;
+      document.getElementById('epoc-current-field-title').innerText = fieldName;
+      document.getElementById('epoc-view-fields').classList.add('hidden');
+      document.getElementById('epoc-view-cases').classList.remove('hidden');
+      renderEpocCasesList();
+    }
+
+    function renderEpocFieldsList() {
+      const container = document.getElementById('epoc-fields-list');
+      container.innerHTML = '';
+
+      EPOC_FIELDS.forEach(fName => {
+        const fieldCases = storedEpocCases.filter(c => c.fieldName === fName);
+        const count = fieldCases.length;
+        const hasReport = fieldCases.some(c => c.report === true);
+
+        const btn = document.createElement('button');
+        btn.className = `w-full p-3 rounded-xl border text-left flex justify-between items-center shadow-sm transition cursor-pointer ${hasReport ? 'bg-purple-50 border-purple-300' : 'bg-white border-slate-200 hover:border-purple-300'}`;
+        btn.onclick = () => navToEpocCases(fName);
+        btn.innerHTML = `
+          <div class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+            ${fName}
+            ${hasReport ? '<span class="text-[9px] bg-purple-600 text-white px-1.5 py-0.5 rounded-full font-bold">要約済</span>' : ''}
+          </div>
+          <span class="text-xs font-bold ${count > 0 ? 'text-purple-700' : 'text-slate-400'}">${count} 症例</span>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function renderEpocCasesList() {
+      const container = document.getElementById('epoc-cases-list');
+      container.innerHTML = '';
+
+      const matched = storedEpocCases.filter(c => c.fieldName === currentEpocField);
+
+      if(matched.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 text-center py-2">この分野にはまだ症例が登録されていません。</p>`;
+        return;
+      }
+
+      matched.forEach(c => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-50 p-3 rounded-lg border text-xs space-y-2 relative";
+        card.innerHTML = `
+          <div class="flex justify-between items-start pr-6">
+            <span class="font-bold text-slate-800">${c.age} / ${c.name} (ID: ${c.id})</span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] ${c.surg==='yes'?'bg-indigo-100 text-indigo-800':'bg-slate-200 text-slate-700'}">
+              ${c.surg==='yes'?'外科症例あり':'外科症例なし'}
+            </span>
+          </div>
+          <div class="text-[11px] text-slate-500 space-y-0.5">
+            <div>診療科: <strong>${c.dept || '未設定'}</strong></div>
+            <div>受領: ${c.start || '未設定'} 〜 ${c.end || '未設定'} | 入退院: ${c.adm || '未設定'} 〜 ${c.dis || '未設定'}</div>
+          </div>
+          ${c.summary ? `<div class="bg-white p-2 rounded border text-slate-700"><strong>概略:</strong> ${c.summary}</div>` : ''}
+          
+          <div class="flex items-center gap-2 pt-1 border-t mt-1">
+            <label class="flex items-center gap-1.5 font-bold text-purple-900 cursor-pointer text-xs">
+              <input type="checkbox" ${c.report ? 'checked' : ''} onchange="toggleEpocReport('${c.uuid}', this.checked)" class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500">
+              病歴要約提出済み
+            </label>
+          </div>
+
+          <button onclick="deleteEpocCase('${c.uuid}')" class="absolute top-2 right-2 text-rose-500 font-bold hover:bg-rose-50 px-2 py-1 rounded cursor-pointer z-10">✕</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function saveEpocCase() {
+      const age = document.getElementById('epoc-case-age').value;
+      const name = document.getElementById('epoc-case-name').value || '匿名';
+      const id = document.getElementById('epoc-case-id').value || '--';
+      const dept = document.getElementById('epoc-case-dept').value || '';
+      const surg = document.getElementById('epoc-case-surg').value;
+      const start = document.getElementById('epoc-case-start').value || '';
+      const end = document.getElementById('epoc-case-end').value || '';
+      const adm = document.getElementById('epoc-case-adm').value || '';
+      const dis = document.getElementById('epoc-case-dis').value || '';
+      const summary = document.getElementById('epoc-case-summary').value || '';
+
+      const newCase = {
+        uuid: Date.now().toString(),
+        fieldName: currentEpocField,
+        age, name, id, dept, surg, start, end, adm, dis, summary,
+        report: false
+      };
+
+      storedEpocCases.push(newCase);
+      localStorage.setItem('epoc_cases_data', JSON.stringify(storedEpocCases));
+
+      document.getElementById('epoc-case-name').value = '';
+      document.getElementById('epoc-case-id').value = '';
+      document.getElementById('epoc-case-dept').value = '';
+      document.getElementById('epoc-case-summary').value = '';
+
+      renderEpocCasesList();
+      updateEpocSummary();
+      alert('症例を追加登録しました。');
+    }
+
+    function toggleEpocReport(uuid, checked) {
+      const target = storedEpocCases.find(c => String(c.uuid) === String(uuid));
+      if(target) {
+        target.report = checked;
+        localStorage.setItem('epoc_cases_data', JSON.stringify(storedEpocCases));
+        updateEpocSummary();
+      }
+    }
+
+    function deleteEpocCase(uuid) {
+      if(!confirm('この症例を削除しますか？')) return;
+      storedEpocCases = storedEpocCases.filter(c => String(c.uuid) !== String(uuid));
+      localStorage.setItem('epoc_cases_data', JSON.stringify(storedEpocCases));
+      renderEpocCasesList();
+      updateEpocSummary();
+      renderEpocFieldsList();
+    }
+
+    function updateEpocSummary() {
+      // 分野ごとに病歴要約提出が少なくとも1つ以上ある分野のカウント
+      const fieldsWithReport = new Set(
+        storedEpocCases.filter(c => c.report === true).map(c => c.fieldName)
+      ).size;
+
+      // 外科症例有 かつ 病歴要約済の症例が存在するか
+      const hasSurgReport = storedEpocCases.some(c => c.surg === 'yes' && c.report === true);
+
+      document.getElementById('epoc-summary-reports').innerText = `${fieldsWithReport} / 56`;
+      document.getElementById('epoc-summary-surg').innerText = hasSurgReport ? '済' : '未';
+    }
+
+    function exportEpocData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(storedEpocCases));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `epoc_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importEpocData() {
+      document.getElementById('epoc-import-file').click();
+    }
+
+    function handleEpocFileImport(e) {
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const imported = JSON.parse(evt.target.result);
+          if(Array.isArray(imported)) {
+            storedEpocCases = imported;
+            localStorage.setItem('epoc_cases_data', JSON.stringify(storedEpocCases));
+            updateEpocSummary();
+            renderEpocFieldsList();
+            alert('EPOCデータを正常に復元しました。');
+          }
+        } catch(err) {
+          alert('ファイルの読み込みに失敗しました。正しいJSON形式か確認してください。');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+
+    // ==================== J-OSLER 制御ロジック ====================
     const JOSLER_DATA = [
       {
         id: "general", name: "総合内科", reqCases: 10, reqGroups: 3, reqReports: 2,
@@ -680,38 +1046,6 @@
       }
     ];
 
-    // LocalStorage状態管理
-    let storedCases = JSON.parse(localStorage.getItem('josler_cases_data') || '[]');
-    let currentFieldId = null;
-    let currentGroupName = null;
-    let currentDiseaseName = null;
-
-    // --- 画面遷移制御 ---
-    function showMainSelection() {
-      document.getElementById('sec-main-selection').classList.remove('hidden');
-      document.getElementById('sec-josler').classList.add('hidden');
-      document.getElementById('sec-calc').classList.add('hidden');
-      document.getElementById('btn-to-main').classList.add('hidden');
-      document.getElementById('header-title').innerText = 'Doctor Support App';
-    }
-
-    function openJosler() {
-      document.getElementById('sec-main-selection').classList.add('hidden');
-      document.getElementById('sec-josler').classList.remove('hidden');
-      document.getElementById('btn-to-main').classList.remove('hidden');
-      document.getElementById('header-title').innerText = 'J-OSLER 症例登録';
-      navToFields();
-      updateJoslerSummary();
-    }
-
-    function openCalc() {
-      document.getElementById('sec-main-selection').classList.add('hidden');
-      document.getElementById('sec-calc').classList.remove('hidden');
-      document.getElementById('btn-to-main').classList.remove('hidden');
-      document.getElementById('header-title').innerText = '計算・鑑別アシスト';
-      switchCalcTab('abg');
-    }
-
     function navToFields() {
       document.getElementById('josler-view-fields').classList.remove('hidden');
       document.getElementById('josler-view-groups').classList.add('hidden');
@@ -779,7 +1113,6 @@
       renderCasesList();
     }
 
-    // --- レンダリング系 ---
     function renderFieldsList() {
       const container = document.getElementById('fields-list');
       container.innerHTML = '';
@@ -887,7 +1220,6 @@
       });
     }
 
-    // --- データ保存・更新 ---
     function saveCase() {
       const name = document.getElementById('case-name').value || '匿名';
       const id = document.getElementById('case-id').value || '--';
@@ -947,7 +1279,6 @@
       document.getElementById('summary-outpatient').innerText = `${outCases} 例 (病歴要約 ${outReports}/7)`;
     }
 
-    // --- バックアップ・復元 ---
     function exportData() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(storedCases));
       const downloadAnchor = document.createElement('a');
@@ -1297,23 +1628,19 @@
       document.getElementById('ane-primary-diag').innerHTML = html;
       document.getElementById('ane-step1-result').classList.remove('hidden');
 
-      // 鉄計算パネルのクリア
       document.getElementById('ane-dose-calc-sec').classList.add('hidden');
 
-      // MCV < 70 かつ RPI非上昇の場合はStep2スキップで鉄剤計算へダイレクト移動
       if (isMicroIDA && !anemiaGlobal.isRpiHigh) {
         document.getElementById('ane-step2-sec').classList.add('hidden');
         showIronDoseCalculator();
         return;
       }
 
-      // 早期分岐に該当かつRPI非上昇のその他（MCV>125, Mentzer<13）は即時終了
       if (earlyDiff.length > 0 && !anemiaGlobal.isRpiHigh) {
         document.getElementById('ane-step2-sec').classList.add('hidden');
         return;
       }
 
-      // Step2を展開
       const step2Sec = document.getElementById('ane-step2-sec');
       step2Sec.classList.remove('hidden');
       document.getElementById('ane-form-rpi-high').classList.add('hidden');
