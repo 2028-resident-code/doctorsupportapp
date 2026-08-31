@@ -11,6 +11,10 @@
       color: #2563eb;
       font-weight: bold;
     }
+    .sub-tab-btn.active {
+      background-color: #9333ea;
+      color: white;
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
@@ -82,104 +86,119 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 text-center">
-          <div class="p-3 bg-purple-50 border border-purple-100 rounded-lg">
-            <div class="text-[11px] text-purple-600 font-bold">病歴要約提出数</div>
-            <div id="epoc-summary-reports" class="text-lg font-extrabold text-purple-900">0 / 56</div>
-          </div>
-          <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
-            <div class="text-[11px] text-indigo-600 font-bold">外科症例要件</div>
-            <div id="epoc-summary-surg" class="text-lg font-extrabold text-indigo-900">未</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- EPOC 階層1: 56分野一覧 -->
-      <div id="epoc-view-fields" class="space-y-3">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">分野を選択</h3>
-        <div id="epoc-fields-list" class="space-y-2"></div>
-      </div>
-
-      <!-- EPOC 階層2: 症例登録・一覧画面 -->
-      <div id="epoc-view-cases" class="hidden space-y-4">
-        <button onclick="navToEpocFields()" class="text-xs text-purple-600 font-bold flex items-center gap-1 cursor-pointer">← EPOC分野一覧に戻る</button>
-        
-        <div class="bg-purple-50 border border-purple-200 p-4 rounded-xl space-y-1">
-          <div id="epoc-current-field-title" class="font-extrabold text-purple-900 text-base"></div>
-          <div class="text-xs text-purple-700">この分野の症例管理および病歴要約の設定を行えます。</div>
-        </div>
-
-        <!-- 登録済み症例リスト -->
-        <div id="epoc-cases-list" class="space-y-3"></div>
-
-        <!-- 新規登録フォーム -->
-        <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-3 shadow-sm">
-          <h4 class="text-sm font-bold text-slate-700 border-b pb-2">➕ 症例を追加登録</h4>
+        <div class="bg-purple-50 p-4 rounded-xl border border-purple-100 text-center space-y-2">
+          <div class="text-xs text-purple-600 font-bold">病歴要約提出数</div>
+          <div id="epoc-summary-reports" class="text-2xl font-extrabold text-purple-900">0 / 55</div>
           
-          <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="flex justify-center items-center gap-4 text-xs pt-1 border-t border-purple-200 text-slate-600">
             <div>
-              <label class="block mb-1 font-medium">年齢</label>
-              <select id="epoc-case-age" class="w-full p-2 border rounded bg-slate-50">
-                <option>10代</option><option>20代</option><option>30代</option><option>40代</option>
-                <option>50代</option><option>60代</option><option>70代</option><option>80代</option><option>90代以上</option>
-              </select>
+              外科症例: <span id="epoc-summary-surg" class="font-bold text-slate-800">未</span>
             </div>
             <div>
-              <label class="block mb-1 font-medium">名前 (イニシャル/仮名)</label>
-              <input type="text" id="epoc-case-name" placeholder="例: T.K." class="w-full p-2 border rounded bg-slate-50">
+              CPC: <button id="epoc-summary-cpc-btn" onclick="toggleCpcStatus()" class="font-bold px-2 py-0.5 rounded text-[11px] bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer">未 (クリックで変更)</button>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <label class="block mb-1 font-medium">患者ID</label>
-              <input type="text" id="epoc-case-id" placeholder="123456" class="w-full p-2 border rounded bg-slate-50">
-            </div>
-            <div>
-              <label class="block mb-1 font-medium">診療科</label>
-              <input type="text" id="epoc-case-dept" placeholder="例: 消化器内科" class="w-full p-2 border rounded bg-slate-50">
-            </div>
+      <!-- EPOC 内サブタブ切替（症例マスター一覧 vs 分野別管理） -->
+      <div class="flex bg-slate-200 p-1 rounded-xl text-xs">
+        <button id="epoc-subtab-fields-btn" onclick="switchEpocSubTab('fields')" class="sub-tab-btn active flex-1 py-2 text-center rounded-lg font-bold transition cursor-pointer">📁 分野別登録管理 (55分野)</button>
+        <button id="epoc-subtab-master-btn" onclick="switchEpocSubTab('master')" class="sub-tab-btn flex-1 py-2 text-center rounded-lg font-bold text-slate-600 transition cursor-pointer">📋 全登録症例一覧 (マスター)</button>
+      </div>
+
+      <!-- EPOC 登録フォームエリア（共通） -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-3 shadow-sm">
+        <h4 class="text-sm font-bold text-slate-700 border-b pb-2">➕ 症例を追加登録</h4>
+        
+        <div class="grid grid-cols-3 gap-2 text-xs">
+          <div>
+            <label class="block mb-1 font-medium">実年齢 (歳)</label>
+            <input type="number" id="epoc-case-age" placeholder="例: 45" class="w-full p-2 border rounded bg-slate-50">
           </div>
-
-          <div class="text-xs">
-            <label class="block mb-1 font-medium">外科症例の有無</label>
-            <select id="epoc-case-surg" class="w-full p-2 border rounded bg-slate-50">
-              <option value="no">なし (内科・その他)</option>
-              <option value="yes">あり (外科症例)</option>
+          <div>
+            <label class="block mb-1 font-medium">性別</label>
+            <select id="epoc-case-gender" class="w-full p-2 border rounded bg-slate-50">
+              <option value="男性">男性</option>
+              <option value="女性">女性</option>
+              <option value="その他">その他</option>
             </select>
           </div>
-
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <label class="block mb-1 font-medium">受け持ち開始日</label>
-              <input type="date" id="epoc-case-start" class="w-full p-2 border rounded bg-slate-50">
-            </div>
-            <div>
-              <label class="block mb-1 font-medium">受け持ち終了日</label>
-              <input type="date" id="epoc-case-end" class="w-full p-2 border rounded bg-slate-50">
-            </div>
+          <div>
+            <label class="block mb-1 font-medium">名前 (イニシャル等)</label>
+            <input type="text" id="epoc-case-name" placeholder="例: T.K." class="w-full p-2 border rounded bg-slate-50">
           </div>
-
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <label class="block mb-1 font-medium">入院日</label>
-              <input type="date" id="epoc-case-adm" class="w-full p-2 border rounded bg-slate-50">
-            </div>
-            <div>
-              <label class="block mb-1 font-medium">退院日</label>
-              <input type="date" id="epoc-case-dis" class="w-full p-2 border rounded bg-slate-50">
-            </div>
-          </div>
-
-          <div class="text-xs">
-            <label class="block mb-1 font-medium">症例概略</label>
-            <textarea id="epoc-case-summary" rows="2" placeholder="主訴、診断の経緯、治療概要など" class="w-full p-2 border rounded bg-slate-50"></textarea>
-          </div>
-
-          <button onclick="saveEpocCase()" class="w-full bg-purple-600 text-white font-bold py-2.5 rounded-lg shadow hover:bg-purple-700 transition text-xs cursor-pointer">
-            この症例を登録する
-          </button>
         </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="block mb-1 font-medium">患者ID</label>
+            <input type="text" id="epoc-case-id" placeholder="123456" class="w-full p-2 border rounded bg-slate-50">
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">診療科</label>
+            <input type="text" id="epoc-case-dept" placeholder="例: 消化器内科" class="w-full p-2 border rounded bg-slate-50">
+          </div>
+        </div>
+
+        <div class="text-xs">
+          <label class="block mb-1 font-medium">外科症例の有無</label>
+          <select id="epoc-case-surg" class="w-full p-2 border rounded bg-slate-50">
+            <option value="no">なし (内科・その他)</option>
+            <option value="yes">あり (外科症例)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="block mb-1 font-medium">受け持ち開始日</label>
+            <input type="date" id="epoc-case-start" class="w-full p-2 border rounded bg-slate-50">
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">受け持ち終了日</label>
+            <input type="date" id="epoc-case-end" class="w-full p-2 border rounded bg-slate-50">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="block mb-1 font-medium">入院日</label>
+            <input type="date" id="epoc-case-adm" class="w-full p-2 border rounded bg-slate-50">
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">退院日</label>
+            <input type="date" id="epoc-case-dis" class="w-full p-2 border rounded bg-slate-50">
+          </div>
+        </div>
+
+        <!-- 該当可能分野のマルチセレクト (全55分野) -->
+        <div class="text-xs space-y-1">
+          <label class="block font-medium text-slate-700">該当しそうな分野をすべて選択 (複数可):</label>
+          <div id="epoc-form-field-checkboxes" class="max-h-40 overflow-y-auto p-2.5 border rounded bg-slate-50 grid grid-cols-2 gap-1.5 text-[11px]">
+            <!-- JSで動的生成 -->
+          </div>
+        </div>
+
+        <div class="text-xs">
+          <label class="block mb-1 font-medium">症例概略</label>
+          <textarea id="epoc-case-summary" rows="2" placeholder="主訴、診断の経緯、治療概要など" class="w-full p-2 border rounded bg-slate-50"></textarea>
+        </div>
+
+        <button onclick="saveEpocCase()" class="w-full bg-purple-600 text-white font-bold py-2.5 rounded-lg shadow hover:bg-purple-700 transition text-xs cursor-pointer">
+          この症例を新規追加登録する
+        </button>
+      </div>
+
+      <!-- EPOC サブビュー1: 55分野別一覧 -->
+      <div id="epoc-subview-fields" class="space-y-3">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">55分野一覧 (クリックで症例を展開)</h3>
+        <div id="epoc-fields-accordion-list" class="space-y-2"></div>
+      </div>
+
+      <!-- EPOC サブビュー2: 全症例マスター一覧 -->
+      <div id="epoc-subview-master" class="hidden space-y-3">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">登録済み 全症例マスター</h3>
+        <div id="epoc-master-cases-list" class="space-y-3"></div>
       </div>
 
     </section>
@@ -655,7 +674,7 @@
   </main>
 
   <script>
-    // ==================== EPOC 56分野定義 ====================
+    // ==================== EPOC 55分野定義（CPC除外） ====================
     const EPOC_FIELDS = [
       "ショック", "体重減少・るい痩", "発疹", "黄疸", "発熱", "もの忘れ", "頭痛", "めまい", 
       "意識障害・失神", "けいれん発作", "視力障害", "胸痛", "心停止", "呼吸困難", "吐血・喀血", 
@@ -665,17 +684,24 @@
       "心不全", "大動脈瘤", "高血圧", "肺癌", "肺炎", "急性上気道炎", "気管支喘息", "COPD", 
       "急性胃腸炎", "胃癌", "消化性潰瘍", "肝炎・肝硬変", "胆石症", "大腸癌", "腎盂腎炎", 
       "尿路結石", "腎不全", "高エネルギー外傷・骨折", "糖尿病", "脂質異常症", "気分障害", 
-      "統合失調症", "依存症（ニコチン・アルコール・薬物・病的賭博）", "CPC"
+      "統合失調症", "依存症（ニコチン・アルコール・薬物・病的賭博）"
     ];
 
-    // LocalStorage状態管理 (EPOC & J-OSLER)
-    let storedEpocCases = JSON.parse(localStorage.getItem('epoc_cases_data') || '[]');
-    let currentEpocField = null;
+    // EPOC LocalStorage状態
+    let storedEpocCases = JSON.parse(localStorage.getItem('epoc_cases_data_v2') || '[]');
+    let epocCpcDone = JSON.parse(localStorage.getItem('epoc_cpc_done') || 'false');
+    let epocOpenField = null; // 現在アコーディオン展開中の分野
 
+    // J-OSLER LocalStorage状態
     let storedCases = JSON.parse(localStorage.getItem('josler_cases_data') || '[]');
     let currentFieldId = null;
     let currentGroupName = null;
     let currentDiseaseName = null;
+
+    // 初期化ロード
+    window.addEventListener('DOMContentLoaded', () => {
+      renderEpocFormCheckboxes();
+    });
 
     // --- 共通 画面遷移制御 ---
     function showMainSelection() {
@@ -694,7 +720,7 @@
       document.getElementById('sec-calc').classList.add('hidden');
       document.getElementById('btn-to-main').classList.remove('hidden');
       document.getElementById('header-title').innerText = 'EPOC 症例登録';
-      navToEpocFields();
+      switchEpocSubTab('fields');
       updateEpocSummary();
     }
 
@@ -719,79 +745,167 @@
       switchCalcTab('abg');
     }
 
-    // ==================== EPOC 制御ロジック ====================
-    function navToEpocFields() {
-      document.getElementById('epoc-view-fields').classList.remove('hidden');
-      document.getElementById('epoc-view-cases').classList.add('hidden');
-      renderEpocFieldsList();
-    }
+    // ==================== EPOC 新制御ロジック ====================
 
-    function navToEpocCases(fieldName) {
-      currentEpocField = fieldName;
-      document.getElementById('epoc-current-field-title').innerText = fieldName;
-      document.getElementById('epoc-view-fields').classList.add('hidden');
-      document.getElementById('epoc-view-cases').classList.remove('hidden');
-      renderEpocCasesList();
-    }
-
-    function renderEpocFieldsList() {
-      const container = document.getElementById('epoc-fields-list');
+    function renderEpocFormCheckboxes() {
+      const container = document.getElementById('epoc-form-field-checkboxes');
       container.innerHTML = '';
-
-      EPOC_FIELDS.forEach(fName => {
-        const fieldCases = storedEpocCases.filter(c => c.fieldName === fName);
-        const count = fieldCases.length;
-        const hasReport = fieldCases.some(c => c.report === true);
-
-        const btn = document.createElement('button');
-        btn.className = `w-full p-3 rounded-xl border text-left flex justify-between items-center shadow-sm transition cursor-pointer ${hasReport ? 'bg-purple-50 border-purple-300' : 'bg-white border-slate-200 hover:border-purple-300'}`;
-        btn.onclick = () => navToEpocCases(fName);
-        btn.innerHTML = `
-          <div class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
-            ${fName}
-            ${hasReport ? '<span class="text-[9px] bg-purple-600 text-white px-1.5 py-0.5 rounded-full font-bold">要約済</span>' : ''}
-          </div>
-          <span class="text-xs font-bold ${count > 0 ? 'text-purple-700' : 'text-slate-400'}">${count} 症例</span>
+      EPOC_FIELDS.forEach(f => {
+        const label = document.createElement('label');
+        label.className = "flex items-center gap-1.5 cursor-pointer text-slate-700 hover:text-purple-700";
+        label.innerHTML = `
+          <input type="checkbox" value="${f}" class="epoc-field-cb w-3.5 h-3.5 text-purple-600 rounded">
+          <span>${f}</span>
         `;
-        container.appendChild(btn);
+        container.appendChild(label);
       });
     }
 
-    function renderEpocCasesList() {
-      const container = document.getElementById('epoc-cases-list');
+    function switchEpocSubTab(sub) {
+      const btnFields = document.getElementById('epoc-subtab-fields-btn');
+      const btnMaster = document.getElementById('epoc-subtab-master-btn');
+      const viewFields = document.getElementById('epoc-subview-fields');
+      const viewMaster = document.getElementById('epoc-subview-master');
+
+      if (sub === 'fields') {
+        btnFields.classList.add('active');
+        btnFields.classList.remove('text-slate-600');
+        btnMaster.classList.remove('active');
+        btnMaster.classList.add('text-slate-600');
+        viewFields.classList.remove('hidden');
+        viewMaster.classList.add('hidden');
+        renderEpocFieldsAccordion();
+      } else {
+        btnMaster.classList.add('active');
+        btnMaster.classList.remove('text-slate-600');
+        btnFields.classList.remove('active');
+        btnFields.classList.add('text-slate-600');
+        viewMaster.classList.remove('hidden');
+        viewFields.classList.add('hidden');
+        renderEpocMasterCases();
+      }
+    }
+
+    function toggleEpocAccordion(fName) {
+      epocOpenField = (epocOpenField === fName) ? null : fName;
+      renderEpocFieldsAccordion();
+    }
+
+    function renderEpocFieldsAccordion() {
+      const container = document.getElementById('epoc-fields-accordion-list');
       container.innerHTML = '';
 
-      const matched = storedEpocCases.filter(c => c.fieldName === currentEpocField);
+      EPOC_FIELDS.forEach(fName => {
+        // この分野を「提出完了」としている症例があるか
+        const assignedCase = storedEpocCases.find(c => c.assignedField === fName);
+        const isDone = !!assignedCase;
 
-      if(matched.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-400 text-center py-2">この分野にはまだ症例が登録されていません。</p>`;
+        // この分野のタグが付いている候補症例一覧
+        const candidateCases = storedEpocCases.filter(c => Array.isArray(c.fields) && c.fields.includes(fName));
+
+        const card = document.createElement('div');
+        card.className = `border rounded-xl transition overflow-hidden shadow-sm ${isDone ? 'bg-purple-50 border-purple-300' : 'bg-white border-slate-200'}`;
+
+        let isOpen = (epocOpenField === fName);
+
+        card.innerHTML = `
+          <div onclick="toggleEpocAccordion('${fName}')" class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50">
+            <div class="font-bold text-xs text-slate-800 flex items-center gap-2">
+              <span>${fName}</span>
+              ${isDone ? '<span class="text-[9px] bg-purple-600 text-white px-1.5 py-0.5 rounded-full font-bold">要約提出済</span>' : ''}
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold ${candidateCases.length > 0 ? 'text-purple-700' : 'text-slate-400'}">${candidateCases.length} 候補症例</span>
+              <span class="text-slate-400 text-xs">${isOpen ? '▲' : '▼'}</span>
+            </div>
+          </div>
+        `;
+
+        if (isOpen) {
+          const body = document.createElement('div');
+          body.className = "p-3 border-t bg-slate-50 space-y-2 text-xs";
+
+          if (candidateCases.length === 0) {
+            body.innerHTML = `<p class="text-slate-400 text-center py-2 text-[11px]">この分野にタグ付けされた症例はありません。</p>`;
+          } else {
+            candidateCases.forEach(c => {
+              // 他の分野で既に提出決定しているか
+              const isOccupiedByOther = c.assignedField && c.assignedField !== fName;
+              const isOccupiedByThis = c.assignedField === fName;
+
+              const item = document.createElement('div');
+              item.className = `p-2.5 rounded-lg border transition ${isOccupiedByOther ? 'bg-slate-200 border-slate-300 opacity-60' : (isOccupiedByThis ? 'bg-purple-100 border-purple-300' : 'bg-white border-slate-200')}`;
+              
+              item.innerHTML = `
+                <div class="flex justify-between items-start">
+                  <div class="font-bold text-slate-800">${c.age}歳 (${c.gender}) / ${c.name} (ID: ${c.id})</div>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded ${c.surg==='yes'?'bg-indigo-100 text-indigo-800':'bg-slate-100 text-slate-600'}">${c.surg==='yes'?'外科症例':'内科等'}</span>
+                </div>
+                <div class="text-[10px] text-slate-500 mt-0.5">科: ${c.dept || '未設定'} | 受領: ${c.start || '--'} 〜 ${c.end || '--'}</div>
+                ${c.summary ? `<div class="bg-white/80 p-1.5 rounded border text-[11px] text-slate-700 mt-1"><strong>概略:</strong> ${c.summary}</div>` : ''}
+                
+                <div class="mt-2 pt-1 border-t flex items-center justify-between">
+                  <label class="flex items-center gap-1.5 font-bold ${isOccupiedByOther ? 'text-slate-400 cursor-not-allowed' : 'text-purple-900 cursor-pointer'}">
+                    <input type="checkbox" ${isOccupiedByThis ? 'checked' : ''} ${isOccupiedByOther ? 'disabled' : ''} onchange="setEpocFieldAssignment('${c.uuid}', '${fName}', this.checked)" class="w-4 h-4 text-purple-600 rounded">
+                    <span>この分野で病歴要約を提出する</span>
+                  </label>
+                  ${isOccupiedByOther ? `<span class="text-[10px] text-amber-800 font-bold">※「${c.assignedField}」で提出済</span>` : ''}
+                </div>
+              `;
+              body.appendChild(item);
+            });
+          }
+          card.appendChild(body);
+        }
+
+        container.appendChild(card);
+      });
+    }
+
+    function renderEpocMasterCases() {
+      const container = document.getElementById('epoc-master-cases-list');
+      container.innerHTML = '';
+
+      if (storedEpocCases.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">登録された症例はありません。</p>`;
         return;
       }
 
-      matched.forEach(c => {
+      storedEpocCases.forEach(c => {
+        const isAssigned = !!c.assignedField;
         const card = document.createElement('div');
-        card.className = "bg-slate-50 p-3 rounded-lg border text-xs space-y-2 relative";
+        card.className = `p-3.5 rounded-xl border text-xs space-y-2 relative transition ${isAssigned ? 'bg-slate-200 border-slate-300 opacity-70' : 'bg-white border-slate-200 shadow-sm'}`;
+
+        const fieldBadges = (c.fields || []).map(f => `<span class="bg-purple-50 text-purple-700 border border-purple-200 text-[10px] px-1.5 py-0.5 rounded">${f}</span>`).join(' ');
+
         card.innerHTML = `
           <div class="flex justify-between items-start pr-6">
-            <span class="font-bold text-slate-800">${c.age} / ${c.name} (ID: ${c.id})</span>
-            <span class="px-1.5 py-0.5 rounded text-[10px] ${c.surg==='yes'?'bg-indigo-100 text-indigo-800':'bg-slate-200 text-slate-700'}">
+            <div>
+              <span class="font-extrabold text-slate-800 text-sm">${c.age}歳 (${c.gender}) / ${c.name}</span>
+              <span class="text-slate-500 text-[11px] ml-1">(ID: ${c.id})</span>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.surg==='yes'?'bg-indigo-100 text-indigo-800':'bg-slate-100 text-slate-600'}">
               ${c.surg==='yes'?'外科症例あり':'外科症例なし'}
             </span>
           </div>
-          <div class="text-[11px] text-slate-500 space-y-0.5">
-            <div>診療科: <strong>${c.dept || '未設定'}</strong></div>
-            <div>受領: ${c.start || '未設定'} 〜 ${c.end || '未設定'} | 入退院: ${c.adm || '未設定'} 〜 ${c.dis || '未設定'}</div>
-          </div>
-          ${c.summary ? `<div class="bg-white p-2 rounded border text-slate-700"><strong>概略:</strong> ${c.summary}</div>` : ''}
-          
-          <div class="flex items-center gap-2 pt-1 border-t mt-1">
-            <label class="flex items-center gap-1.5 font-bold text-purple-900 cursor-pointer text-xs">
-              <input type="checkbox" ${c.report ? 'checked' : ''} onchange="toggleEpocReport('${c.uuid}', this.checked)" class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500">
-              病歴要約提出済み
-            </label>
+
+          <div class="text-[11px] text-slate-600 space-y-0.5">
+            <div>診療科: <strong>${c.dept || '未設定'}</strong> | 受領: ${c.start || '未設定'} 〜 ${c.end || '未設定'} | 入退院: ${c.adm || '未設定'} 〜 ${c.dis || '未設定'}</div>
+            <div class="pt-1 flex flex-wrap gap-1 items-center">
+              <span class="font-bold text-slate-500">該当分野:</span>
+              ${fieldBadges || '<span class="text-slate-400">未選択</span>'}
+            </div>
           </div>
 
-          <button onclick="deleteEpocCase('${c.uuid}')" class="absolute top-2 right-2 text-rose-500 font-bold hover:bg-rose-50 px-2 py-1 rounded cursor-pointer z-10">✕</button>
+          ${c.summary ? `<div class="bg-white/90 p-2 rounded border text-slate-700"><strong>概略:</strong> ${c.summary}</div>` : ''}
+
+          <div class="pt-1 border-t flex justify-between items-center text-[11px]">
+            ${isAssigned 
+              ? `<span class="font-bold text-purple-900 bg-purple-100 border border-purple-200 px-2 py-0.5 rounded">📌 ${c.assignedField} 分野で要約提出設定中</span>` 
+              : `<span class="text-amber-700 font-bold">⚠️ 未要約 (分野別管理から要約提出分野を選択可能)</span>`}
+          </div>
+
+          <button onclick="deleteEpocCase('${c.uuid}')" class="absolute top-2 right-2 text-rose-500 font-bold hover:bg-rose-100 px-2 py-1 rounded cursor-pointer z-10">✕</button>
         `;
         container.appendChild(card);
       });
@@ -799,6 +913,7 @@
 
     function saveEpocCase() {
       const age = document.getElementById('epoc-case-age').value;
+      const gender = document.getElementById('epoc-case-gender').value;
       const name = document.getElementById('epoc-case-name').value || '匿名';
       const id = document.getElementById('epoc-case-id').value || '--';
       const dept = document.getElementById('epoc-case-dept').value || '';
@@ -809,59 +924,89 @@
       const dis = document.getElementById('epoc-case-dis').value || '';
       const summary = document.getElementById('epoc-case-summary').value || '';
 
+      if(!age) return alert('実年齢を入力してください。');
+
+      // チェックされた分野を取得
+      const selectedFields = [];
+      document.querySelectorAll('.epoc-field-cb:checked').forEach(cb => {
+        selectedFields.push(cb.value);
+      });
+
       const newCase = {
         uuid: Date.now().toString(),
-        fieldName: currentEpocField,
-        age, name, id, dept, surg, start, end, adm, dis, summary,
-        report: false
+        age, gender, name, id, dept, surg, start, end, adm, dis, summary,
+        fields: selectedFields,
+        assignedField: null // 提出確定分野
       };
 
       storedEpocCases.push(newCase);
-      localStorage.setItem('epoc_cases_data', JSON.stringify(storedEpocCases));
+      localStorage.setItem('epoc_cases_data_v2', JSON.stringify(storedEpocCases));
 
+      // フォームクリア
+      document.getElementById('epoc-case-age').value = '';
       document.getElementById('epoc-case-name').value = '';
       document.getElementById('epoc-case-id').value = '';
       document.getElementById('epoc-case-dept').value = '';
       document.getElementById('epoc-case-summary').value = '';
+      document.querySelectorAll('.epoc-field-cb').forEach(cb => cb.checked = false);
 
-      renderEpocCasesList();
       updateEpocSummary();
-      alert('症例を追加登録しました。');
+      renderEpocFieldsAccordion();
+      renderEpocMasterCases();
+      alert('症例を新規追加登録しました。');
     }
 
-    function toggleEpocReport(uuid, checked) {
+    function setEpocFieldAssignment(uuid, fieldName, isChecked) {
       const target = storedEpocCases.find(c => String(c.uuid) === String(uuid));
       if(target) {
-        target.report = checked;
-        localStorage.setItem('epoc_cases_data', JSON.stringify(storedEpocCases));
+        target.assignedField = isChecked ? fieldName : null;
+        localStorage.setItem('epoc_cases_data_v2', JSON.stringify(storedEpocCases));
         updateEpocSummary();
+        renderEpocFieldsAccordion();
+        renderEpocMasterCases();
       }
+    }
+
+    function toggleCpcStatus() {
+      epocCpcDone = !epocCpcDone;
+      localStorage.setItem('epoc_cpc_done', JSON.stringify(epocCpcDone));
+      updateEpocSummary();
     }
 
     function deleteEpocCase(uuid) {
       if(!confirm('この症例を削除しますか？')) return;
       storedEpocCases = storedEpocCases.filter(c => String(c.uuid) !== String(uuid));
-      localStorage.setItem('epoc_cases_data', JSON.stringify(storedEpocCases));
-      renderEpocCasesList();
+      localStorage.setItem('epoc_cases_data_v2', JSON.stringify(storedEpocCases));
       updateEpocSummary();
-      renderEpocFieldsList();
+      renderEpocFieldsAccordion();
+      renderEpocMasterCases();
     }
 
     function updateEpocSummary() {
-      // 分野ごとに病歴要約提出が少なくとも1つ以上ある分野のカウント
-      const fieldsWithReport = new Set(
-        storedEpocCases.filter(c => c.report === true).map(c => c.fieldName)
+      // 提出確定された分野のユニーク数
+      const assignedFieldsCount = new Set(
+        storedEpocCases.filter(c => c.assignedField).map(c => c.assignedField)
       ).size;
 
-      // 外科症例有 かつ 病歴要約済の症例が存在するか
-      const hasSurgReport = storedEpocCases.some(c => c.surg === 'yes' && c.report === true);
+      // 外科症例で要約提出済みのものが1件以上あるか
+      const hasSurgReport = storedEpocCases.some(c => c.surg === 'yes' && c.assignedField);
 
-      document.getElementById('epoc-summary-reports').innerText = `${fieldsWithReport} / 56`;
+      document.getElementById('epoc-summary-reports').innerText = `${assignedFieldsCount} / 55`;
       document.getElementById('epoc-summary-surg').innerText = hasSurgReport ? '済' : '未';
+
+      const cpcBtn = document.getElementById('epoc-summary-cpc-btn');
+      if (epocCpcDone) {
+        cpcBtn.innerText = '済 (クリックで解除)';
+        cpcBtn.className = 'font-bold px-2 py-0.5 rounded text-[11px] bg-emerald-600 text-white cursor-pointer';
+      } else {
+        cpcBtn.innerText = '未 (クリックで完了)';
+        cpcBtn.className = 'font-bold px-2 py-0.5 rounded text-[11px] bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer';
+      }
     }
 
     function exportEpocData() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(storedEpocCases));
+      const payload = { cases: storedEpocCases, cpc: epocCpcDone };
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
       downloadAnchor.setAttribute("download", `epoc_backup_${new Date().toISOString().slice(0,10)}.json`);
@@ -881,13 +1026,18 @@
       reader.onload = function(evt) {
         try {
           const imported = JSON.parse(evt.target.result);
-          if(Array.isArray(imported)) {
+          if (imported.cases && Array.isArray(imported.cases)) {
+            storedEpocCases = imported.cases;
+            epocCpcDone = !!imported.cpc;
+          } else if(Array.isArray(imported)) {
             storedEpocCases = imported;
-            localStorage.setItem('epoc_cases_data', JSON.stringify(storedEpocCases));
-            updateEpocSummary();
-            renderEpocFieldsList();
-            alert('EPOCデータを正常に復元しました。');
           }
+          localStorage.setItem('epoc_cases_data_v2', JSON.stringify(storedEpocCases));
+          localStorage.setItem('epoc_cpc_done', JSON.stringify(epocCpcDone));
+          updateEpocSummary();
+          renderEpocFieldsAccordion();
+          renderEpocMasterCases();
+          alert('EPOCデータを正常に復元しました。');
         } catch(err) {
           alert('ファイルの読み込みに失敗しました。正しいJSON形式か確認してください。');
         }
@@ -954,7 +1104,7 @@
           { name: "1型糖尿病", diseases: ["1型糖尿病"] },
           { name: "2型糖尿病", diseases: ["2型糖尿病"] },
           { name: "二次性糖尿病/低血糖/糖尿病緊急症", diseases: ["二次性糖尿病", "遺伝子異常による糖尿病", "糖尿病合併妊娠", "副腎不全などによる低血糖", "インスリノーマ", "反応性低血糖", "薬物性低血糖", "糖尿病ケトアシドーシス", "高血糖高浸透圧症候群", "乳酸アシドーシス", "低血糖昏睡"] },
-          { name: "慢性合併症", diseases: ["糖尿病網膜症/腎症/神経障害", "大血管障害 (PAD/心脳血管)", "糖尿病に合併しやすい疾患(がん/骨粗鬆症/認知症/うつ病/歯周病)"] },
+          { name: "慢性合併症", diseases: ["糖尿病網網膜症/腎症/神経障害", "大血管障害 (PAD/心脳血管)", "糖尿病に合併しやすい疾患(がん/骨粗鬆症/認知症/うつ病/歯周病)"] },
           { name: "肥満・脂質・代謝異常", diseases: ["単純肥満", "二次性肥満", "メタボリックシンドローム", "原発性/続発性脂質異常症", "痛風/無症候性高尿酸血症", "ビタミン欠乏症(B1/ナイアシン欠乏)", "ビタミン過剰症", "微量元素欠乏/過剰症"] }
         ]
       },
