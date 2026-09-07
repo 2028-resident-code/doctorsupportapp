@@ -33,12 +33,23 @@
 
     <!-- ==================== 0. メイン機能選択画面 ==================== -->
     <section id="sec-main-selection" class="space-y-6 pt-6">
-      <div class="text-center space-y-2">
-        <h2 class="text-xl font-extrabold text-slate-800">機能を選択してください</h2>
-        <p class="text-xs text-slate-500">診療サポートツール・症例管理システム</p>
+
+      <!-- 初回訪問時のみ表示される案内メッセージ -->
+      <div id="first-visit-banner" class="hidden bg-amber-50 border border-amber-300 p-4 rounded-xl flex justify-between items-start text-xs text-amber-900 shadow-sm">
+        <div class="space-y-1 pr-2">
+          <div class="font-bold flex items-center gap-1 text-amber-950">
+            📌 お願い
+          </div>
+          <p class="leading-relaxed">
+            履歴を残すために、共有＞ホーム画面に追加を選択し、ホーム画面にアイコンを作成することをお勧めします。
+          </p>
+        </div>
+        <button onclick="dismissFirstVisitBanner()" class="text-amber-500 hover:text-amber-800 font-bold text-sm px-1.5 py-0.5 rounded cursor-pointer">
+          ✕
+        </button>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
         <!-- EPOCカード -->
         <button onclick="openEpoc()" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-purple-500 hover:shadow-md transition text-left space-y-3 group cursor-pointer">
           <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
@@ -729,7 +740,21 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       renderEpocFormCheckboxes();
+      checkFirstVisit();
     });
+
+    // 初回訪問案内バナー制御
+    function checkFirstVisit() {
+      const hasVisited = localStorage.getItem('app_visited_flag');
+      if (!hasVisited) {
+        document.getElementById('first-visit-banner').classList.remove('hidden');
+      }
+    }
+
+    function dismissFirstVisitBanner() {
+      document.getElementById('first-visit-banner').classList.add('hidden');
+      localStorage.setItem('app_visited_flag', 'true');
+    }
 
     // --- 共通 画面遷移制御 ---
     function showMainSelection() {
