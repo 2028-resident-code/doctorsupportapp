@@ -1907,10 +1907,10 @@
         html += `<p class="font-bold text-blue-800">鑑別: 下痢、NaCl大量補液、2型RTA (低P血症、高尿酸血症、腎性糖尿など)、糖尿病性ケトアシドーシス改善期、慢性呼吸性アルカローシス改善期</p>`;
       } else {
         html += `<p class="font-bold text-red-800">鑑別: ケトアシドーシス増悪期、慢性呼吸性アシドーシス改善期、遠位尿細管性アシドーシス (RTA)</p>`;
-        if (sK && uPh) {
-          if (sK < 3.5 && uPh > 5.5) {
+        if (sK) {
+          if (sK < 3.5 && uPh && uPh > 5.5) {
             html += `<p class="text-red-700 font-bold">➔ 詳細鑑別: 1型RTA (遠位型) 疑い (低Kかつ尿pH &gt; 5.5)</p>`;
-          } else if (sK > 5.0 && uPh > 5.5) {
+          } else if (sK > 4.7) {
             html += `<p class="text-red-700 font-bold">➔ 詳細鑑別: 4型RTA 疑い (高Kかつ尿pH &gt; 5.5: ACE阻害薬、スピロノラクトン、慢性間質性腎炎、糖尿病性腎炎など)</p>`;
           }
         }
